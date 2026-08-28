@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2024"
 description = "Bounded Docker and Podman startup-capacity preflight"
 license = "MIT"
+readme = "../README.md"
 repository = "https://github.com/B-Divyesh/sf-sandbox-capacity-probe"
+homepage = "https://sandbox-capacity-probe.sociobot.in"
 keywords = ["docker", "podman", "capacity", "benchmark", "cli"]
 categories = ["command-line-utilities", "development-tools"]
 

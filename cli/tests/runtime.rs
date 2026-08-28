@@ -1,7 +1,7 @@
 use std::process::Command;
 
 #[test]
-fn runtime_dry_run_smoke_test() {
+fn runtime_probe_smoke_test() {
     let Some(runtime) = std::env::var("SCP_RUNTIME_TEST").ok() else {
         return;
     };
@@ -23,11 +23,18 @@ fn runtime_dry_run_smoke_test() {
             "0",
             "--samples",
             "1",
-            "--dry-run",
             "--json",
+            "--ci",
+            "--startup-budget-ms",
+            "60000",
         ])
         .output()
         .expect("run scp");
     assert!(output.status.success());
-    assert!(String::from_utf8_lossy(&output.stdout).contains("\"dry_run\": true"));
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(String::from_utf8_lossy(&output.stdout).contains("\"schema_version\": 1"));
 }

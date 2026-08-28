@@ -7,4 +7,5 @@ output/
 graphify-out/
 test-results/
 playwright-report/
+.factory/evidence/
 .DS_Store

@@ -36,3 +36,14 @@ test("legal pages are available", async ({ page }) => {
     await expect(page.locator("main")).toBeVisible();
   }
 });
+
+test("a returned license is stored, stripped from the URL, and verified", async ({ page }) => {
+  await page.route("https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/verify?license=license-test", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ valid: true, reason: "ok", expires_at: null }) })
+  );
+  await page.goto("/?license=license-test");
+  await expect(page).toHaveURL("http://127.0.0.1:4173/");
+  await expect(page.locator("#license-status")).toContainText("Planner Pro is active");
+  await expect(page.locator("#pro-tools")).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem("sb_license:sandbox-capacity-probe"))).toBe("license-test");
+});
