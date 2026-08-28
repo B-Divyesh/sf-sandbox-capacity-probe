@@ -1,0 +1,11 @@
+{
+  "slug": "sandbox-capacity-probe",
+  "title": "Sandbox Capacity Probe",
+  "territory": "devtools-data",
+  "user": "Teams running many isolated agent or customer containers who need a repeatable preflight showing whether networking, ports, mounts, and startup latency will remain safe at planned scale.",
+  "smallest_useful_product": "A CLI that launches bounded synthetic containers against a chosen Docker/Podman host, records startup percentiles and rule counts, and writes a capacity envelope.",
+  "success_measure": "For supported hosts, predicted startup p95 at a configured container/port level is within 25% of a subsequent controlled run.",
+  "artifact_class": "cli",
+  "monetization": "one-time",
+  "constraints": "Explicit target confirmation and bounded defaults; never benchmark a production host by default; isolate synthetic networks; document runtime-specific results."
+}
