@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f2f0e7" />
+    <meta name="description" content="Measure Docker and Podman sandbox startup latency, port-rule pressure, mounts, and the safe capacity envelope before production." />
+    <title>Sandbox Capacity Probe — Know the safe operating envelope</title>
+    <link rel="icon" href="/mark.svg" type="image/svg+xml" />
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+    <header class="site-header">
+      <nav class="nav shell" aria-label="Primary navigation">
+        <a class="brand" href="/" aria-label="Sandbox Capacity Probe home">
+          <img class="brand-mark" src="/mark.svg" alt="" width="36" height="36" />
+          <span>Sandbox Capacity Probe</span>
+        </a>
+        <div class="nav-links">
+          <a href="#method">Method</a>
+          <a href="#planner">Planner</a>
+          <a class="button survey" href="https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/checkout">Get Planner Pro · $39</a>
+        </div>
+      </nav>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <section class="hero" aria-labelledby="hero-title">
+        <figure class="hero-image">
+          <img src="/topographic-envelope.webp" srcset="/topographic-envelope-700.webp 700w, /topographic-envelope.webp 1400w" sizes="100vw" width="1400" height="933" fetchpriority="high" alt="Topographic paper terrain with container-shaped markers following a measured route to a bounded plateau" />
+        </figure>
+        <div class="hero-grid shell">
+          <div class="hero-copy">
+            <p class="eyebrow">Preflight survey / Docker + Podman</p>
+            <h1 id="hero-title">Find the edge before your fleet does.</h1>
+            <p class="lede">Measure startup p95, published-port pressure, mounts, and headroom on the host you actually plan to use—then validate the prediction with a second controlled run.</p>
+            <div class="hero-actions">
+              <a class="button survey" href="#run">Run your first survey</a>
+              <a class="button secondary" href="#planner">Map a scenario</a>
+            </div>
+            <ul class="hero-note" aria-label="Product guarantees">
+              <li>Bounded by default</li>
+              <li>Local results</li>
+              <li>No telemetry</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="section shell" id="method" aria-labelledby="method-title">
+        <div class="section-heading">
+          <div>
+            <p class="map-label">Field evidence / 01</p>
+            <h2 id="method-title">A capacity claim you can reproduce.</h2>
+          </div>
+          <p class="section-intro">The probe turns a sandbox shape into host-specific evidence instead of a generic container limit. Every result names the runtime, context, image, load shape, and caveats.</p>
+        </div>
+        <div class="proof-grid">
+          <article class="proof"><span class="proof-index">COORD / A</span><h3>Observe the slope</h3><p>Start containers at quartile levels, measuring time-to-running while published bindings and mounts accumulate.</p></article>
+          <article class="proof"><span class="proof-index">COORD / B</span><h3>Mark the contour</h3><p>Fit a conservative p95 trend and compare it with your startup budget: comfortable, watch, or exceeded.</p></article>
+          <article class="proof"><span class="proof-index">COORD / C</span><h3>Walk it again</h3><p>Repeat the same shape later. <code>scp compare</code> reports prediction error and whether it meets the 25% target.</p></article>
+        </div>
+      </section>
+
+      <section class="section section-rule" id="run" aria-labelledby="run-title">
+        <div class="shell runbook">
+          <div>
+            <p class="map-label">Runbook / 02</p>
+            <h2 id="run-title">Explicit, isolated, cleaned up.</h2>
+            <ol class="steps">
+              <li><strong>Name and confirm the target.</strong><span>Production-like names are refused unless separately overridden.</span></li>
+              <li><strong>Review a dry run.</strong><span>See the maximum starts, ports, mounts, and measurement levels without runtime access.</span></li>
+              <li><strong>Measure and compare.</strong><span>Save JSON, repeat under controlled load, and quantify prediction accuracy.</span></li>
+            </ol>
+          </div>
+          <div class="terminal" aria-label="Example terminal session">
+            <div class="terminal-bar"><span>staging-west / survey</span><span>scp 0.1.0</span></div>
+            <pre tabindex="0"><span class="prompt">$</span> cargo install --path cli
+<span class="prompt">$</span> scp probe \
+  --target staging-west \
+  --confirm staging-west \
+  --containers 12 \
+  --ports-per-container 2 \
+  --mounts 1 \
+  --samples 3 \
+  --output capacity.json
+
+Sandbox capacity envelope
+  planned shape   12 × 2 ports × 1 mount
+
+  level  starts    p50     p95   published
+      3       3  182ms   194ms          6
+      6       3  219ms   238ms         12
+      9       3  271ms   294ms         18
+     12       3  326ms   351ms         24
+
+  <span class="safe">COMFORTABLE — predicted p95 351ms</span>
+  Next: repeat, then run scp compare.</pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-rule" id="planner" aria-labelledby="planner-title">
+        <div class="shell">
+          <div class="section-heading">
+            <div><p class="map-label">Route sketch / 03</p><h2 id="planner-title">Map the shape. Measure the host.</h2></div>
+            <p class="section-intro">This local planner is a transparent planning estimate, not a benchmark. Use the generated command to replace it with evidence from your runtime.</p>
+          </div>
+          <div class="planner-wrap">
+            <form class="planner-controls" aria-label="Capacity scenario inputs" onsubmit="return false">
+              <div class="field"><div class="field-head"><label for="containers">Concurrent containers</label><output id="container-value" for="containers">12</output></div><input id="containers" type="range" min="1" max="64" value="12" /></div>
+              <div class="field"><div class="field-head"><label for="ports">Ports per container</label><output id="port-value" for="ports">2</output></div><input id="ports" type="range" min="0" max="16" value="2" /></div>
+              <div class="field"><div class="field-head"><label for="mounts">Mounts per container</label><output id="mount-value" for="mounts">1</output></div><input id="mounts" type="range" min="0" max="16" value="1" /></div>
+              <div class="two-fields">
+                <div class="field"><label for="baseline">Baseline startup (ms)</label><input id="baseline" type="number" min="1" max="60000" value="180" /></div>
+                <div class="field"><label for="budget">p95 budget (ms)</label><input id="budget" type="number" min="50" max="60000" value="1500" /></div>
+              </div>
+            </form>
+            <div class="planner-results">
+              <div class="result-main">
+                <p class="map-label">Estimated p95 / model only</p>
+                <p class="result-number" id="prediction">330 ms</p>
+                <span class="status" id="status">comfortable</span>
+                <div class="metrics">
+                  <div class="metric"><span>Published bindings</span><strong id="binding-count">24</strong></div>
+                  <div class="metric"><span>Budget position</span><strong id="headroom">1,170 ms remaining</strong></div>
+                </div>
+                <p class="estimate-note" id="planner-summary" aria-live="polite">Planning estimate: 330 milliseconds p95, comfortable, with 1170 milliseconds headroom.</p>
+                <div class="command-block"><code id="generated-command">scp probe --target staging-west --confirm staging-west --containers 12 --ports-per-container 2 --mounts 1 --samples 3 --startup-budget-ms 1500 --output capacity.json</code><button id="copy-command" type="button">Copy command</button></div>
+                <div class="planner-actions"><button class="button secondary" id="export-csv" type="button">Export CSV</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-rule" id="pro" aria-labelledby="pro-title">
+        <div class="shell license-grid">
+          <div>
+            <p class="map-label">Operator pack / 04</p>
+            <h2 id="pro-title">Keep several routes on the same map.</h2>
+            <p class="lede">Planner Pro saves and compares up to five local scenarios. The complete CLI, safety behavior, JSON reports, and CSV export remain free.</p>
+            <p class="price">$39 <small>one-time purchase</small></p>
+            <ul class="feature-list">
+              <li>Save five planning contours on this device</li>
+              <li>Compare fleet shapes before running probes</li>
+              <li>Future Planner Pro updates for this product</li>
+            </ul>
+            <a class="button survey" href="https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/checkout">Buy Planner Pro</a>
+            <p class="estimate-note">Sociobot/Dodo is the merchant of record. Refunds are handled there and revoke the license automatically. See <a href="/privacy/">privacy</a> and <a href="/terms/">terms</a>.</p>
+          </div>
+          <aside class="license-panel" aria-label="License and saved scenarios">
+            <h3>License station</h3>
+            <p class="license-status" id="license-status" aria-live="polite">Free planner active. No account required.</p>
+            <form class="license-form" id="license-form">
+              <label for="license-token">Have a license? Paste it here</label>
+              <input id="license-token" type="text" autocomplete="off" spellcheck="false" aria-describedby="license-help" />
+              <p class="estimate-note" id="license-help">The token is stored only in this browser and verified with Sociobot.</p>
+              <button class="button secondary" type="submit">Restore purchase</button>
+            </form>
+            <div class="pro-tools" id="pro-tools" hidden>
+              <button class="button secondary" id="save-scenario" type="button">Save current contour</button>
+              <h3>Saved contours</h3>
+              <ul id="saved-scenarios"><li>No saved scenarios yet. Adjust the map above, then save a contour.</li></ul>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <div class="connection"><div class="shell" id="connection-state" aria-live="polite">Checking connection…</div></div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell footer-grid">
+        <div><a class="brand" href="/"><img class="brand-mark" src="/mark.svg" alt="" width="36" height="36" /><span>Sandbox Capacity Probe</span></a><p>A small instrument for finding the safe edge of a container fleet. Built without telemetry.</p></div>
+        <div class="footer-links"><strong>Product</strong><a href="#method">Method</a><a href="#planner">Planner</a><a href="https://github.com/B-Divyesh/sf-sandbox-capacity-probe">Source</a></div>
+        <div class="footer-links"><strong>Legal</strong><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>MIT · 0.1.0</span></div>
+      </div>
+    </footer>
+  </body>
+</html>
