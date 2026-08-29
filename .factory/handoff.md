@@ -92,3 +92,12 @@ test remains `SCP_RUNTIME_TEST=docker cargo test --manifest-path cli/Cargo.toml
 Static deployment artifact: `dist/site/`. Deployment is performed from the
 committed `main` branch by the factory static deployment configuration. Run
 `npm run build:site` before a manual static upload.
+
+Repair commit `1f73d201b194ecfb94e0ab77bd49d3914aa6f951` was pushed to `main`
+and deployed with `/opt/fleet/lib/deploy-static.sh sandbox-capacity-probe
+dist/site` on 2026-08-29. Azure deployment `b525e08b-e47f-4d56-97f9-66d5956976f9`
+completed successfully. Live verification at
+`https://sandbox-capacity-probe.sociobot.in/` returned HTTP 200 in 650 ms with
+no console/page errors; the response includes the configured CSP with
+`frame-ancestors 'none'`. The live demo marker is present and an unknown route
+returns the designed `/404.html` with HTTP 404.
