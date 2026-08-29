@@ -402,6 +402,7 @@ test("@claim:cli-report-compare renders reports and checks the 25 percent predic
     const rejected = runCli(["compare", reportPath, incompatiblePath, "--json"]);
     expect(rejected.status, field).toBe(3);
     expect(JSON.parse(rejected.stdout)).toMatchObject({
+      within_25_percent: false,
       shape_matches: false,
       mismatched_fields: [field]
     });
@@ -418,6 +419,7 @@ test("@claim:cli-report-compare renders reports and checks the 25 percent predic
   const rejected = runCli(["compare", reportPath, incompatiblePath, "--json"]);
   expect(rejected.status).toBe(3);
   expect(JSON.parse(rejected.stdout)).toMatchObject({
+    within_25_percent: false,
     shape_matches: false,
     mismatched_fields: ["target", "runtime", "context", "image"]
   });

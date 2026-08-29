@@ -225,7 +225,7 @@ pub fn compare_reports(predicted: &Report, observed: &Report) -> Comparison {
         predicted_p95_ms: prediction,
         observed_p95_ms: observed_p95,
         absolute_error_percent: round1(error),
-        within_25_percent: error <= 25.0,
+        within_25_percent: error <= 25.0 && mismatched_fields.is_empty(),
         shape_matches: mismatched_fields.is_empty(),
         mismatched_fields,
     }
@@ -300,6 +300,10 @@ mod tests {
         ] {
             let comparison = compare_reports(&predicted, &observed);
             assert!(!comparison.shape_matches, "{field} must be comparable");
+            assert!(
+                !comparison.within_25_percent,
+                "{field} cannot pass the target"
+            );
             assert_eq!(comparison.mismatched_fields, [field]);
         }
     }
