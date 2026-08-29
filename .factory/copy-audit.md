@@ -28,6 +28,10 @@ sentence exceeds 22 words and none uses a banned marketing term.
 | Correct the planner inputs to create a command. | 8 |
 | Demo mode cannot restore licenses. | 5 |
 | Start for real first. | 4 |
+| Demo mode keeps sample data separate. | 6 |
+| Start for real to restore a license. | 7 |
+| p95 budget must be a whole number between 50 and 60,000 ms. | 12 |
+| Correct it to calculate or export this scenario. | 8 |
 | No saved scenarios yet. | 4 |
 | Adjust the map above, then save a contour. | 8 |
 | A local tool for measuring safe container capacity. | 8 |
