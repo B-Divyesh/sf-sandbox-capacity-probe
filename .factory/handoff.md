@@ -1,5 +1,20 @@
 # Handoff — Sandbox Capacity Probe 0.1.0
 
+## Independent verification status — FAIL (2026-08-29)
+
+Candidate `7e77ece9e21aad70ccfb8c57ec349a33bc28993b` was independently verified
+against https://sandbox-capacity-probe.sociobot.in/. The deployment is byte-for-
+byte the candidate build; this is **not** a deployment-only failure.
+
+Do not release this candidate. The mandatory `.factory/claims.json` and
+`.factory/demo.md` are missing, and neither the landing page nor `scp` provides
+the required one-click/sample-data demo (`scp --demo` exits 2). The cold first
+screen also fails the plain-words first-read gate. Additional high findings are
+planner validation that emits commands rejected by the CLI, no observed 429 /
+`Retry-After` after 30 license-verify requests, and no CSP/frame-ancestor
+header. See `.factory/verification.md` for all evidence, passing checks, and
+defects by severity.
+
 ## What shipped
 
 - A Rust single-binary CLI (`scp`) for bounded Docker or Podman capacity sweeps.
