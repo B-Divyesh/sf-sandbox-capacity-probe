@@ -52,14 +52,28 @@ test("core planner works without a license and has no serious accessibility issu
 
 test("@claim:demo-isolated loads sample data in its own namespace and resets it", async ({ page }) => {
   const billingRequests: string[] = [];
+  await page.route("https://api.sociobot.in/**", (route) => route.abort("blockedbyclient"));
   page.on("request", (request) => {
     if (request.url().startsWith("https://api.sociobot.in/")) billingRequests.push(request.url());
   });
+  const checkedAt = Date.now();
   const realData = {
-    "sb_scenarios:sandbox-capacity-probe": "real-scenarios-sentinel",
+    "sb_scenarios:sandbox-capacity-probe": JSON.stringify([{
+      containers: 8,
+      ports: 2,
+      mounts: 1,
+      baselineMs: 220,
+      budgetMs: 1200,
+      predictedMs: 303,
+      status: "comfortable"
+    }]),
     "sb_license:sandbox-capacity-probe": "real-license-sentinel",
-    "sb_license_verdict:sandbox-capacity-probe": "real-verdict-sentinel",
-    "sb_license_verify_attempt:sandbox-capacity-probe": "real-attempt-sentinel"
+    "sb_license_verdict:sandbox-capacity-probe": JSON.stringify({
+      valid: true,
+      reason: "ok",
+      checked_at: checkedAt
+    }),
+    "sb_license_verify_attempt:sandbox-capacity-probe": String(checkedAt)
   };
   await page.addInitScript((entries) => {
     for (const [key, value] of Object.entries(entries)) localStorage.setItem(key, value);
@@ -87,7 +101,10 @@ test("@claim:demo-isolated loads sample data in its own namespace and resets it"
   expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage).filter(([key]) => key.startsWith("sb_"))))).toEqual(realData);
   await page.locator("#start-real").click();
   await expect(page).toHaveURL("http://127.0.0.1:4173/");
+  await expect(page.locator("#license-status")).toContainText("Planner Pro is active");
   expect(await page.evaluate(() => localStorage.getItem("demo:sandbox-capacity-probe:scenario"))).toBeNull();
+  expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage).filter(([key]) => key.startsWith("sb_"))))).toEqual(realData);
+  expect(billingRequests).toEqual([]);
 });
 
 test("@claim:local-planner calculates the sample without a cross-origin request", async ({ page }) => {
