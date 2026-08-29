@@ -36,10 +36,10 @@
   },
   {
     "id": "cli-demo",
-    "claim": "The CLI demo needs no runtime or network and writes its bundled report to a temporary directory.",
-    "where": "CLI help, README, and demo guide",
+    "claim": "The CLI demo and website recording use the same bundled report without a runtime or network.",
+    "where": "landing CLI sample, CLI help, README, and demo guide",
     "test": "npm run test:claims -- --grep '@claim:cli-demo'",
-    "sandbox": "run the compiled CLI demo without Docker or Podman; parse the printed temporary path and validate its JSON"
+    "sandbox": "run the compiled CLI demo without Docker or Podman; validate its temporary JSON; compare the website recording and downloadable sample with the shipped fixture"
   },
   {
     "id": "cli-safety-bounds",
@@ -75,6 +75,34 @@
     "where": "paid-tier section, README, and terms",
     "test": "npm run test:claims -- --grep '@claim:planner-pro-five'",
     "sandbox": "mock one valid Sociobot verdict, save six scenarios, and assert only the latest five appear and remain in local storage"
+  },
+  {
+    "id": "planner-pro-price",
+    "claim": "Planner Pro costs $39 as a one-time purchase.",
+    "where": "landing paid section, terms, and README",
+    "test": "npm run test:claims -- --grep '@claim:planner-pro-price'",
+    "sandbox": "assert the visible offer and request the documented checkout URL; verify the hosted page names this product, $39.00, and a one-time charge"
+  },
+  {
+    "id": "planner-pro-checkout",
+    "claim": "The buy link opens a Sociobot-hosted checkout for Sandbox Capacity Probe.",
+    "where": "landing paid section, terms, and README",
+    "test": "npm run test:claims -- --grep '@claim:planner-pro-checkout'",
+    "sandbox": "follow the exact public buy link without purchasing; assert a successful hosted Dodo session for Sandbox Capacity Probe"
+  },
+  {
+    "id": "planner-pro-no-account",
+    "claim": "The free website planner works without an account.",
+    "where": "landing license status, privacy page, and README",
+    "test": "npm run test:claims -- --grep '@claim:planner-pro-no-account'",
+    "sandbox": "open a fresh browser with no license or account state, change the planner, and assert no account or billing request occurs"
+  },
+  {
+    "id": "planner-pro-free-features",
+    "claim": "The CLI, safety controls, JSON reports, and CSV export work without Planner Pro.",
+    "where": "landing paid section, terms, and README",
+    "test": "npm run test:claims -- --grep '@claim:planner-pro-free-features'",
+    "sandbox": "use a fresh unlicensed browser to export CSV, then run the unlicensed CLI safety and JSON paths against the deterministic local runtime"
   },
   {
     "id": "license-policy",

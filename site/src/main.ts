@@ -133,6 +133,7 @@ $("#planner-form").addEventListener("submit", (event) => event.preventDefault())
 function initDemo(): void {
   if (!demoMode) return;
   document.title = "Demo — Sandbox Capacity Probe";
+  document.querySelector('meta[name="description"]')?.setAttribute("content", "Try the real bundled CLI sample and an isolated capacity-planning scenario.");
   $("#demo-banner").hidden = false;
   let saved: ScenarioInput | null = null;
   try {
@@ -151,7 +152,28 @@ function initDemo(): void {
     $("#planner-summary").textContent = "Demo reset to the bundled sample scenario.";
   });
   $("#start-real").addEventListener("click", () => localStorage.removeItem(demoKey));
+  if (window.location.hash === "#cli-demo") {
+    requestAnimationFrame(() => $("#cli-demo-title").focus({ preventScroll: true }));
+  }
 }
+
+$("#copy-demo-command").addEventListener("click", async () => {
+  const button = $("#copy-demo-command") as HTMLButtonElement;
+  try {
+    await navigator.clipboard.writeText("capacity-probe demo");
+    button.textContent = "Copied demo command";
+    setTimeout(() => (button.textContent = "Copy demo command"), 1600);
+  } catch {
+    button.textContent = "Select the command to copy";
+  }
+});
+
+$("#replay-demo").addEventListener("click", () => {
+  const recording = document.querySelector<HTMLElement>(".terminal-recording");
+  if (!recording) return;
+  recording.classList.remove("is-replaying");
+  requestAnimationFrame(() => recording.classList.add("is-replaying"));
+});
 
 $("#copy-command").addEventListener("click", async () => {
   const button = $("#copy-command") as HTMLButtonElement;
@@ -252,7 +274,7 @@ function initLicense(): void {
 $("#license-form").addEventListener("submit", (event) => {
   event.preventDefault();
   if (demoMode) {
-    $("#license-status").textContent = "Demo mode cannot restore licenses. Start for real first.";
+    $("#license-status").textContent = "Demo mode cannot restore licenses. Exit demo and use your data first.";
     return;
   }
   const token = ($("#license-token") as HTMLInputElement).value.trim();
@@ -284,7 +306,7 @@ function renderSaved(): void {
   list.replaceChildren();
   if (!scenarios.length) {
     const item = document.createElement("li");
-    item.textContent = "No saved scenarios yet. Adjust the map above, then save a contour.";
+    item.textContent = "No saved scenarios yet. Adjust the planner above, then save this scenario.";
     list.append(item);
     return;
   }
@@ -326,7 +348,7 @@ if (!demoMode) {
   document.querySelectorAll<HTMLElement>("[data-real-only]").forEach((element) => { element.hidden = true; });
   $("#license-form").hidden = true;
   ($<HTMLInputElement>("#license-token")).disabled = true;
-  $("#license-status").textContent = "Demo mode keeps sample data separate. Start for real to restore a license.";
+  $("#license-status").textContent = "Demo mode keeps sample data separate. Exit demo to restore a license.";
 }
 updateConnection();
 

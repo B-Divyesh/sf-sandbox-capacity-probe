@@ -15,7 +15,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 #[command(
     name = "capacity-probe",
     version,
-    about = "Find the safe operating envelope for a Docker or Podman sandbox shape",
+    about = "Find the safe operating envelope for a planned Docker or Podman workload",
     long_about = "Sandbox Capacity Probe runs a bounded synthetic container sweep on an explicitly confirmed non-production runtime, then reports startup percentiles, published-port pressure, firewall rule evidence, and a capacity envelope. No telemetry; results stay local."
 )]
 struct Cli {
@@ -41,7 +41,7 @@ enum Command {
     Compare {
         /// Earlier report containing the prediction
         predicted: PathBuf,
-        /// Subsequent report at the same sandbox shape
+        /// Subsequent report for the same planned workload
         observed: PathBuf,
         /// Emit only machine-readable JSON
         #[arg(long)]
@@ -403,7 +403,7 @@ fn print_report(report: &Report) {
         report.config.target, report.config.runtime, report.config.context
     );
     println!(
-        "  planned shape   {} containers × {} ports × {} mounts",
+        "  planned workload {} containers × {} ports × {} mounts",
         report.config.containers,
         report.config.ports_per_container,
         report.config.mounts_per_container
@@ -429,7 +429,7 @@ fn print_report(report: &Report) {
     println!("  {}", report.envelope.explanation);
     println!("  Rule evidence: {}", report.host.rule_count_method);
     println!(
-        "  Next: repeat the same shape, then run `capacity-probe compare first.json second.json`."
+        "  Next: repeat this planned workload, then run `capacity-probe compare first.json second.json`."
     );
 }
 

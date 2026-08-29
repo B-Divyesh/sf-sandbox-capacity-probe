@@ -65,10 +65,11 @@ test("@claim:demo-isolated loads sample data in its own namespace and resets it"
     for (const [key, value] of Object.entries(entries)) localStorage.setItem(key, value);
   }, realData);
   await page.goto("/?demo=1#planner");
+  await expect(page).toHaveTitle("Demo — Sandbox Capacity Probe");
   await expect(page.locator("#demo-banner")).toBeVisible();
   await expect(page.locator("#containers")).toHaveValue("24");
   await expect(page.locator("#license-form")).toBeHidden();
-  await expect(page.locator("[data-real-only]")).toHaveCount(2);
+  await expect(page.locator("[data-real-only]")).toHaveCount(1);
   await expect(page.locator("[data-real-only]:visible")).toHaveCount(0);
   await page.evaluate(() => {
     const input = document.querySelector<HTMLInputElement>("#license-token")!;
@@ -84,6 +85,9 @@ test("@claim:demo-isolated loads sample data in its own namespace and resets it"
   await page.locator("#reset-demo").click();
   await expect(page.locator("#containers")).toHaveValue("24");
   expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage).filter(([key]) => key.startsWith("sb_"))))).toEqual(realData);
+  await page.locator("#start-real").click();
+  await expect(page).toHaveURL("http://127.0.0.1:4173/");
+  expect(await page.evaluate(() => localStorage.getItem("demo:sandbox-capacity-probe:scenario"))).toBeNull();
 });
 
 test("@claim:local-planner calculates the sample without a cross-origin request", async ({ page }) => {
@@ -125,9 +129,9 @@ test("@claim:offline-reload keeps the planner available after the first visit", 
   await page.goto("/?demo=1");
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload();
-  expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v4");
+  expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v5");
   await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())?.update(); });
-  expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v4");
+  expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v5");
   await context.setOffline(true);
   await page.reload();
   await expect(page.locator("#planner-title")).toBeVisible();
@@ -143,6 +147,16 @@ test("deployment policy has a response-header CSP and a real 404 override", () =
   expect(config.globalHeaders["Content-Security-Policy"]).toContain("frame-ancestors 'none'");
   expect(config.globalHeaders["Content-Security-Policy"]).toContain("connect-src 'self' https://api.sociobot.in");
   expect(config.responseOverrides["404"]).toEqual({ rewrite: "/404.html", statusCode: 404 });
+});
+
+test("every declared claim has exactly one tagged browser test", () => {
+  const claims = JSON.parse(readFileSync(".factory/claims.json", "utf8")) as Array<{ id: string; test: string }>;
+  const source = readFileSync("site/tests/site.spec.ts", "utf8");
+  expect(new Set(claims.map(({ id }) => id)).size).toBe(claims.length);
+  for (const claim of claims) {
+    expect(claim.test).toBe(`npm run test:claims -- --grep '@claim:${claim.id}'`);
+    expect(source.split(`@claim:${claim.id}`).length - 1, claim.id).toBe(1);
+  }
 });
 
 test("keyboard navigation reaches the primary action and planner", async ({ page }) => {
@@ -259,6 +273,22 @@ test("metadata, targets, and designed 404 are shipped", async ({ page }) => {
   expect(tooSmall).toEqual([]);
   await page.goto("/404.html");
   await expect(page.locator("h1")).toHaveText("That page was not found.");
+  await expect(page.getByRole("link", { name: "Privacy" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Terms" }).first()).toBeVisible();
+});
+
+test("demo route focuses the real CLI sample and mobile navigation keeps four links", async ({ page }, testInfo) => {
+  await page.goto("/?demo=1#cli-demo");
+  await expect(page.locator("#cli-demo-title")).toBeFocused();
+  await expect(page.locator(".terminal-recording")).toBeVisible();
+  await expect(page.locator("#cli-demo-output")).toContainText("capacity-probe demo");
+  if (testInfo.project.name === "mobile-chromium") {
+    await page.getByText("Menu", { exact: true }).click();
+    const links = page.locator(".nav-menu .nav-links a");
+    await expect(links).toHaveCount(4);
+    for (const link of await links.all()) await expect(link).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  }
 });
 
 test("mobile uses the lightweight hero and stable assets are revalidated", async ({ page }, testInfo) => {
@@ -317,7 +347,7 @@ test("@claim:license-policy stores the token locally and limits manual and autom
   await expect(page.locator("#license-status")).toContainText("Try again after 12 seconds");
 });
 
-test("@claim:cli-demo writes a bundled report only to a process-specific temporary directory", () => {
+test("@claim:cli-demo matches the website recording to the bundled report without a runtime", async ({ page }) => {
   const result = runCli(["--demo"]);
   expect(result.status).toBe(0);
   expect(result.stdout).toContain("no container runtime was contacted");
@@ -325,7 +355,19 @@ test("@claim:cli-demo writes a bundled report only to a process-specific tempora
   expect(match).not.toBeNull();
   const reportPath = match![1].trim();
   expect(reportPath.startsWith(tmpdir())).toBe(true);
-  expect(JSON.parse(readFileSync(reportPath, "utf8")).schema_version).toBe(1);
+  const report = JSON.parse(readFileSync(reportPath, "utf8"));
+  const shipped = JSON.parse(readFileSync("cli/examples/demo-capacity.json", "utf8"));
+  const website = JSON.parse(readFileSync("site/public/demo-capacity.json", "utf8"));
+  expect(report).toEqual(shipped);
+  expect(website).toEqual(shipped);
+  await page.goto("/?demo=1#cli-demo");
+  const recording = page.locator("#cli-demo-output");
+  await expect(recording).toContainText("$ capacity-probe demo");
+  await expect(recording).toContainText(`${report.config.containers} containers × ${report.config.ports_per_container} ports × ${report.config.mounts_per_container} mount`);
+  await expect(recording).toContainText(`predicted p95 ${report.model.predicted_p95_ms.toFixed(1)} ms / ${report.config.startup_budget_ms} ms budget`);
+  await expect(recording).toContainText(`(${report.envelope.headroom_ms.toFixed(1)} ms headroom)`);
+  await expect(recording).toContainText(report.host.rule_count_method);
+  await expect(page.locator(".terminal-recording")).toHaveAttribute("data-recording-source", "/demo-capacity.json");
   rmSync(dirname(reportPath), { recursive: true, force: true });
 });
 
@@ -453,7 +495,7 @@ test("@claim:planner-pro-five keeps only the five latest local scenarios for rev
   await expect(page.locator("#pro-tools")).toBeVisible();
   await expect(page.locator(".price")).toContainText("$39");
   await expect(page.locator(".price")).toContainText("one-time purchase");
-  await expect(page.getByRole("link", { name: "Buy Planner Pro" })).toHaveAttribute("href", "https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/checkout");
+  await expect(page.getByRole("link", { name: "Buy Planner Pro for $39" })).toHaveAttribute("href", "https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/checkout");
   for (let containers = 10; containers <= 15; containers += 1) {
     await page.locator("#containers").fill(String(containers));
     await page.locator("#save-scenario").click();
@@ -462,6 +504,56 @@ test("@claim:planner-pro-five keeps only the five latest local scenarios for rev
   expect(saved).toHaveLength(5);
   expect(saved[0].containers).toBe(11);
   await expect(page.locator("#saved-scenarios li")).toHaveCount(5);
+});
+
+test("@claim:planner-pro-price verifies the $39 one-time hosted offer", async ({ page, request }) => {
+  await page.goto("/");
+  await expect(page.locator(".price")).toHaveText(/\$39\s+one-time purchase/);
+  const response = await request.get("https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/checkout");
+  expect(response.ok()).toBe(true);
+  const body = await response.text();
+  expect(body).toContain("Sandbox Capacity Probe");
+  expect(body).toMatch(/\$39|39\.00/);
+  expect(body.toLowerCase()).toContain("one-time");
+});
+
+test("@claim:planner-pro-checkout opens the hosted checkout for this product", async ({ page, request }) => {
+  await page.goto("/");
+  const buy = page.getByRole("link", { name: "Buy Planner Pro for $39" });
+  const checkout = await buy.getAttribute("href");
+  expect(checkout).toBe("https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/checkout");
+  const response = await request.get(checkout!);
+  expect(response.ok()).toBe(true);
+  expect(response.url()).toMatch(/^https:\/\/checkout\.dodopayments\.com\/session\//);
+  expect(await response.text()).toContain("Sandbox Capacity Probe");
+});
+
+test("@claim:planner-pro-no-account uses the free planner without account or billing traffic", async ({ page }) => {
+  const outsideRequests: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).origin !== "http://127.0.0.1:4173") outsideRequests.push(request.url());
+  });
+  await page.goto("/");
+  await expect(page.locator("#license-status")).toHaveText("Free planner active. No account required.");
+  expect(await page.evaluate(() => localStorage.length)).toBe(0);
+  await page.locator("#containers").fill("18");
+  await expect(page.locator("#generated-command")).toContainText("--containers 18");
+  expect(outsideRequests).toEqual([]);
+});
+
+test("@claim:planner-pro-free-features keeps CLI safety, JSON, and CSV available without a license", async ({ page }) => {
+  await page.goto("/");
+  expect(await page.evaluate(() => localStorage.getItem("sb_license:sandbox-capacity-probe"))).toBeNull();
+  const downloadPromise = page.waitForEvent("download");
+  await page.locator("#export-csv").click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("sandbox-capacity-scenario.csv");
+  const refused = runCli(["probe", "--target", "production", "--confirm", "production", "--dry-run", "--json"]);
+  expect(refused.status).toBe(2);
+  expect(refused.stderr).toContain("looks like production");
+  const safe = runCli(["probe", "--target", "staging", "--confirm", "staging", "--containers", "1", "--dry-run", "--json"]);
+  expect(safe.status).toBe(0);
+  expect(JSON.parse(safe.stdout)).toMatchObject({ maximum_container_starts: 2 });
 });
 
 test("the installed command name cannot shadow OpenSSH scp", () => {

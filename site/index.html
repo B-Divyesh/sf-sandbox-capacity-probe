@@ -28,20 +28,22 @@
           <img class="brand-mark" src="/mark.svg" alt="" width="36" height="36" />
           <span>Sandbox Capacity Probe</span>
         </a>
-        <div class="nav-links">
-          <a href="/?demo=1#planner">Demo</a>
-          <a href="#method">Method</a>
-          <a href="#planner">Planner</a>
-          <a href="/privacy/">Privacy</a>
-          <a class="button survey" data-real-only href="https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/checkout">Get Planner Pro · $39</a>
-        </div>
+        <details class="nav-menu">
+          <summary>Menu</summary>
+          <div class="nav-links">
+            <a href="/?demo=1#cli-demo">Demo</a>
+            <a href="#method">Method</a>
+            <a href="#planner">Planner</a>
+            <a href="/privacy/">Privacy</a>
+          </div>
+        </details>
       </nav>
     </header>
 
     <section class="demo-banner" id="demo-banner" aria-label="Demo controls" hidden>
       <div class="shell demo-banner-inner">
         <strong>Demo — sample data, nothing is saved</strong>
-        <div><button class="text-button" id="reset-demo" type="button">Reset demo</button><a href="/" id="start-real">Start for real</a></div>
+        <div><button class="text-button" id="reset-demo" type="button">Reset demo</button><a href="/" id="start-real">Exit demo and use your data</a></div>
       </div>
     </section>
 
@@ -52,14 +54,14 @@
         </figure>
         <div class="hero-grid shell">
           <div class="hero-copy">
-            <p class="eyebrow">Preflight survey / Docker + Podman</p>
+            <p class="eyebrow">Docker and Podman capacity check</p>
             <h1 id="hero-title">Measure container capacity before rollout.</h1>
             <p class="lede">For teams running isolated agent or customer containers, measure a safe Docker or Podman scale before the real rollout.</p>
             <div class="hero-actions">
-              <a class="button survey" href="/?demo=1#planner">Try it with sample data</a>
-              <a class="button secondary" href="#planner">Map a scenario</a>
+              <a class="button survey" href="/?demo=1#cli-demo">Try it with sample data</a>
+              <a class="button secondary" href="#planner">Open the capacity planner</a>
             </div>
-            <p class="action-note">The sample opens a local planner and writes only demo storage.</p>
+            <p class="action-note">See the real CLI output and an isolated local planning scenario.</p>
             <ul class="hero-note" aria-label="Product guarantees">
               <li>Sample data stays separate</li>
               <li>Planner runs locally</li>
@@ -69,26 +71,61 @@
         </div>
       </section>
 
+      <section class="section shell cli-demo-section" id="cli-demo" aria-labelledby="cli-demo-title">
+        <div class="section-heading">
+          <div>
+            <p class="map-label">CLI sample / 01</p>
+            <h2 id="cli-demo-title" tabindex="-1">Run the CLI sample without a runtime</h2>
+          </div>
+          <div class="section-intro">
+            <p>This recording comes from <code>capacity-probe demo</code> and the bundled sample report.</p>
+            <p>It needs no Docker, Podman, or network connection.</p>
+            <div class="sample-command"><code>capacity-probe demo</code><button id="copy-demo-command" type="button">Copy demo command</button></div>
+          </div>
+        </div>
+        <div class="terminal terminal-recording" data-recording-source="/demo-capacity.json" aria-label="Recorded capacity-probe demo terminal output">
+          <div class="terminal-bar"><span>bundled sample / no runtime</span><button id="replay-demo" type="button" aria-controls="cli-demo-output">Replay sample</button></div>
+          <pre id="cli-demo-output" tabindex="0"><span class="prompt">$</span> capacity-probe demo
+Demo — bundled sample data; no container runtime was contacted.
+Sandbox capacity envelope
+  target/runtime  staging-west-demo / docker (demo-sample)
+  planned workload 12 containers × 2 ports × 1 mount
+
+  level   starts      p50      p95   published
+      3        3    182.0ms  194.0ms           6
+      6        3    219.0ms  238.0ms          12
+      9        3    271.0ms  294.0ms          18
+     12        3    326.0ms  351.0ms          24
+
+  <span class="safe">COMFORTABLE — predicted p95 351.0 ms / 1500 ms budget (1149.0 ms headroom)</span>
+  The bundled sample stays below 70% of its startup budget.
+  Rule evidence: bundled demonstration data; no host was inspected
+  Next: repeat this planned workload, then run `capacity-probe compare first.json second.json`.
+
+Sample report written to /tmp/sandbox-capacity-probe-demo-4821/capacity-demo.json</pre>
+        </div>
+      </section>
+
       <section class="section shell" id="method" aria-labelledby="method-title">
         <div class="section-heading">
           <div>
-            <p class="map-label">Field evidence / 01</p>
-            <h2 id="method-title">A capacity claim you can reproduce.</h2>
+            <p class="map-label">How it works / 02</p>
+            <h2 id="method-title">How the capacity probe measures a host</h2>
           </div>
-          <p class="section-intro">The probe turns a sandbox shape into host-specific evidence instead of a generic container limit. Every result names the runtime, context, image, load shape, and caveats.</p>
+          <p class="section-intro">The probe turns a planned workload into host-specific evidence. Every result names the runtime, context, image, workload, and limits.</p>
         </div>
         <div class="proof-grid">
-          <article class="proof"><span class="proof-index">COORD / A</span><h3>Observe the slope</h3><p>Start containers at quartile levels, measuring time-to-running while published bindings and mounts accumulate.</p></article>
-          <article class="proof"><span class="proof-index">COORD / B</span><h3>Mark the contour</h3><p>Fit a conservative p95 trend and compare it with your startup budget: comfortable, watch, or exceeded.</p></article>
-          <article class="proof"><span class="proof-index">COORD / C</span><h3>Walk it again</h3><p>Repeat the same shape later. <code>capacity-probe compare</code> reports prediction error and whether it meets the 25% target.</p></article>
+          <article class="proof"><span class="proof-index">STEP / A</span><h3>Measure container startup time</h3><p>Start containers at four levels. Measure startup time as local port bindings and mounts increase.</p></article>
+          <article class="proof"><span class="proof-index">STEP / B</span><h3>Compare startup time with your budget</h3><p>Calculate the p95 startup time. Label the planned workload comfortable, watch, or exceeded.</p></article>
+          <article class="proof"><span class="proof-index">STEP / C</span><h3>Compare two probe reports</h3><p>Repeat the planned workload later. <code>capacity-probe compare</code> reports prediction error against the 25% target.</p></article>
         </div>
       </section>
 
       <section class="section section-rule" id="run" aria-labelledby="run-title">
         <div class="shell runbook">
           <div>
-            <p class="map-label">Runbook / 02</p>
-            <h2 id="run-title">Explicit, isolated, cleaned up.</h2>
+            <p class="map-label">Safe probe steps / 03</p>
+            <h2 id="run-title">How a probe contains test containers</h2>
             <ol class="steps">
               <li><strong>Name and confirm the target.</strong><span>Production-like names are refused unless separately overridden.</span></li>
               <li><strong>Review a dry run.</strong><span>See the maximum starts, ports, mounts, and measurement levels without runtime access.</span></li>
@@ -108,7 +145,7 @@
   --output capacity.json
 
 Sandbox capacity envelope
-  planned shape   12 × 2 ports × 1 mount
+  planned workload 12 × 2 ports × 1 mount
 
   level  starts    p50     p95   published
       3       3  182ms   194ms          6
@@ -125,7 +162,7 @@ Sandbox capacity envelope
       <section class="section section-rule" id="planner" aria-labelledby="planner-title">
         <div class="shell">
           <div class="section-heading">
-            <div><p class="map-label">Route sketch / 03</p><h2 id="planner-title">Map the shape. Measure the host.</h2></div>
+            <div><p class="map-label">Capacity planner / 04</p><h2 id="planner-title">Plan a container workload before probing</h2></div>
             <p class="section-intro">This local planner is a transparent planning estimate, not a benchmark. Use the generated command to replace it with evidence from your runtime.</p>
           </div>
           <div class="planner-wrap">
@@ -160,31 +197,31 @@ Sandbox capacity envelope
       <section class="section section-rule" id="pro" aria-labelledby="pro-title">
         <div class="shell license-grid">
           <div>
-            <p class="map-label">Operator pack / 04</p>
-            <h2 id="pro-title">Keep several routes on the same map.</h2>
-            <p class="lede">Planner Pro saves up to five local scenarios for side-by-side review. The complete CLI, safety behavior, JSON reports, and CSV export remain free.</p>
+            <p class="map-label">Planner Pro / 05</p>
+            <h2 id="pro-title">Save up to five planning scenarios</h2>
+            <p class="lede">Planner Pro saves up to five local scenarios for side-by-side review. The CLI, safety controls, JSON reports, and CSV export work without Planner Pro.</p>
             <p class="price">$39 <small>one-time purchase</small></p>
             <ul class="feature-list">
-              <li>Save five planning contours on this device</li>
-              <li>Compare fleet shapes before running probes</li>
+              <li>Save five scenarios on this device</li>
+              <li>Compare scenarios before running probes</li>
               <li>Keep only the five latest local scenarios</li>
             </ul>
-            <a class="button survey" data-real-only href="https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/checkout">Buy Planner Pro</a>
-            <p class="estimate-note">Sociobot/Dodo is the merchant of record. Refunds are handled there and revoke the license automatically. See <a href="/privacy/">privacy</a> and <a href="/terms/">terms</a>.</p>
+            <a class="button survey" data-real-only href="https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/checkout">Buy Planner Pro for $39</a>
+            <p class="estimate-note">Sociobot hosts checkout. Read the <a href="/terms/">purchase and refund terms</a> or the <a href="/privacy/">privacy policy</a>.</p>
           </div>
           <div class="license-panel" aria-label="License and saved scenarios">
-            <h3>License station</h3>
+            <h3>Restore a Planner Pro license</h3>
             <p class="license-status" id="license-status" aria-live="polite">Free planner active. No account required.</p>
             <form class="license-form" id="license-form">
               <label for="license-token">Have a license? Paste it here</label>
               <input id="license-token" type="text" autocomplete="off" spellcheck="false" aria-describedby="license-help" />
               <p class="estimate-note" id="license-help">The token is stored only in this browser and verified with Sociobot.</p>
-              <button class="button secondary" type="submit">Restore purchase</button>
+              <button class="button secondary" type="submit">Restore Planner Pro access</button>
             </form>
             <div class="pro-tools" id="pro-tools" hidden>
-              <button class="button secondary" id="save-scenario" type="button">Save current contour</button>
-              <h3>Saved contours</h3>
-              <ul id="saved-scenarios"><li>No saved scenarios yet. Adjust the map above, then save a contour.</li></ul>
+              <button class="button secondary" id="save-scenario" type="button">Save current scenario</button>
+              <h3>Saved scenarios</h3>
+              <ul id="saved-scenarios"><li>No saved scenarios yet. Adjust the planner above, then save this scenario.</li></ul>
             </div>
           </div>
         </div>
@@ -196,7 +233,7 @@ Sandbox capacity envelope
     <footer class="site-footer">
       <div class="shell footer-grid">
         <div><a class="brand" href="/"><img class="brand-mark" src="/mark.svg" alt="" width="36" height="36" /><span>Sandbox Capacity Probe</span></a><p>A local tool for measuring safe container capacity. No telemetry.</p><p>Built by Param Factory</p></div>
-        <div class="footer-links"><strong>Product</strong><a href="/?demo=1#planner">Demo</a><a href="#method">Method</a><a href="#planner">Planner</a><a href="https://github.com/B-Divyesh/sf-sandbox-capacity-probe">Source</a></div>
+        <div class="footer-links"><strong>Product</strong><a href="/?demo=1#cli-demo">Demo</a><a href="#method">Method</a><a href="#planner">Planner</a><a href="https://github.com/B-Divyesh/sf-sandbox-capacity-probe">Source</a></div>
         <div class="footer-links"><strong>Legal</strong><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>MIT · 0.1.0</span></div>
       </div>
     </footer>

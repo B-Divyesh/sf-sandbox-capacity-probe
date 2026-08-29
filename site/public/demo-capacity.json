@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "generated_at_unix_ms": 0,
+  "run_id": "demo-staging-west-20260829",
+  "config": {
+    "target": "staging-west-demo",
+    "runtime": "docker",
+    "context": "demo-sample",
+    "containers": 12,
+    "ports_per_container": 2,
+    "mounts_per_container": 1,
+    "samples": 3,
+    "startup_budget_ms": 1500,
+    "image": "alpine:3.20"
+  },
+  "host": {
+    "baseline_published_bindings": 0,
+    "baseline_network_rule_count": null,
+    "rule_count_method": "bundled demonstration data; no host was inspected"
+  },
+  "observations": [],
+  "levels": [
+    { "active_containers": 3, "starts": 3, "p50_ms": 182.0, "p95_ms": 194.0, "published_bindings": 6, "host_network_rule_count": null },
+    { "active_containers": 6, "starts": 3, "p50_ms": 219.0, "p95_ms": 238.0, "published_bindings": 12, "host_network_rule_count": null },
+    { "active_containers": 9, "starts": 3, "p50_ms": 271.0, "p95_ms": 294.0, "published_bindings": 18, "host_network_rule_count": null },
+    { "active_containers": 12, "starts": 3, "p50_ms": 326.0, "p95_ms": 351.0, "published_bindings": 24, "host_network_rule_count": null }
+  ],
+  "model": {
+    "intercept_ms": 137.0,
+    "ms_per_published_binding": 8.9,
+    "predicted_p95_ms": 351.0,
+    "method": "bundled sample trend; no host was measured"
+  },
+  "envelope": {
+    "status": "comfortable",
+    "startup_budget_ms": 1500,
+    "predicted_p95_ms": 351.0,
+    "headroom_ms": 1149.0,
+    "explanation": "The bundled sample stays below 70% of its startup budget."
+  },
+  "caveats": [
+    "This is bundled sample data, not evidence about your host.",
+    "Run capacity-probe probe against an explicitly confirmed non-production runtime for a real measurement."
+  ]
+}

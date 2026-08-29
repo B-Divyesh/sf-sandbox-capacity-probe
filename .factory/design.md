@@ -30,6 +30,11 @@ Controls behave like survey tools: selection moves a crosshair, calculated value
 
 Only one entrance motion is used: contour strokes reveal once over 600 ms while the hero loads. Interface transitions are 160–220 ms and limited to opacity and transform. Nothing loops. Under `prefers-reduced-motion: reduce`, contour reveal and all smooth movement become instant opacity changes.
 
+The CLI sample replay uses one 600 ms opacity-and-position settle. Its output
+is always readable before replay, and reduced-motion mode makes the replay
+instant. The terminal is HTML sourced from the shipped demo report, not a
+video or third-party player.
+
 ## Original asset plan and provenance
 
 `site/public/topographic-envelope.webp` is an original generated illustration: an oblique topographic relief of an abstract container fleet with a vermilion survey route and safe operating plateau. It contains no text or logos so that accessible HTML owns meaning. Generated for this product with `/opt/fleet/lib/gen-image.sh` using the factory `factory-image` deployment, then converted locally to WebP. Prompt and deployment metadata are retained beside the source during generation; the committed WebP is used as decorative context with a descriptive alt because it communicates the bounded-envelope metaphor.

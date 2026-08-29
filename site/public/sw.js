@@ -1,5 +1,5 @@
-const CACHE = "capacity-probe-shell-v4";
-const SHELL = ["/", "/privacy/", "/terms/", "/404.html", "/mark.svg", "/apple-touch-icon.png", "/topographic-envelope-700.webp", "/topographic-envelope.webp"];
+const CACHE = "capacity-probe-shell-v5";
+const SHELL = ["/", "/?demo=1", "/privacy/", "/terms/", "/404.html", "/mark.svg", "/apple-touch-icon.png", "/demo-capacity.json", "/topographic-envelope-700.webp", "/topographic-envelope.webp"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));
