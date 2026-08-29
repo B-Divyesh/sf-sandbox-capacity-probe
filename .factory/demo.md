@@ -9,7 +9,8 @@ The persistent **Demo — sample data, nothing is saved** banner offers **Reset
 demo** and **Start for real**. Demo changes are stored only under the local
 storage key `demo:sandbox-capacity-probe:scenario`; normal license and saved
 scenario keys are never read or written in demo mode. Leaving demo removes that
-key.
+key. Purchase links and license restore controls stay unavailable until you
+choose **Start for real**, so the demo never contacts the billing service.
 
 For the CLI, run either `capacity-probe demo` or `capacity-probe --demo`. It writes the bundled,
 realistic sample report to a process-specific temporary directory and prints its

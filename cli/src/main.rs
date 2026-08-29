@@ -166,13 +166,19 @@ fn execute(cli: Cli) -> Result<u8, String> {
                     }
                 );
                 println!(
-                    "  sandbox shape    {}",
+                    "  comparison inputs {}",
                     if comparison.shape_matches {
                         "matches"
                     } else {
                         "DIFFERS"
                     }
                 );
+                if !comparison.mismatched_fields.is_empty() {
+                    println!(
+                        "  different fields {}",
+                        comparison.mismatched_fields.join(", ")
+                    );
+                }
             }
             Ok(
                 if comparison.within_25_percent && comparison.shape_matches {

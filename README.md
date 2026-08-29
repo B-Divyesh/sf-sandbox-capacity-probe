@@ -72,6 +72,9 @@ The report includes host/runtime metadata, per-start observations, p50/p95, obse
 - `3`: measurements completed but the capacity envelope was exceeded
 
 Run `capacity-probe explain capacity.json` to render a saved JSON report for a human review.
+`capacity-probe compare` accepts only reports from the same target, runtime,
+context, image, and container/port/mount shape. It exits `3` and lists every
+different field when the reports are not comparable.
 
 ## Website
 
@@ -88,7 +91,8 @@ npm run build
 The deployed static-site configuration sends a restrictive Content Security Policy,
 serves a styled 404 page, and caches the offline shell. The demo mode stores only
 `demo:sandbox-capacity-probe:scenario` in local storage; **Start for real** removes
-that sample key.
+that sample key. Demo mode hides purchase and license controls, does not read or
+write real planner or license keys, and does not call the billing service.
 
 ## Development and verification
 

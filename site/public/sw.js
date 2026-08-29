@@ -1,4 +1,4 @@
-const CACHE = "capacity-probe-shell-v3";
+const CACHE = "capacity-probe-shell-v4";
 const SHELL = ["/", "/privacy/", "/terms/", "/404.html", "/mark.svg", "/apple-touch-icon.png", "/topographic-envelope-700.webp", "/topographic-envelope.webp"];
 
 self.addEventListener("install", (event) => {

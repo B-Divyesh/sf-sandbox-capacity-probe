@@ -14,6 +14,31 @@ export interface ScenarioResult {
   headroomMs: number;
 }
 
+export type SavedScenario = ScenarioInput & Pick<ScenarioResult, "predictedMs" | "status">;
+
+function isWholeNumberInRange(value: unknown, minimum: number, maximum: number): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= minimum && value <= maximum;
+}
+
+export function isScenarioInput(value: unknown): value is ScenarioInput {
+  if (typeof value !== "object" || value === null) return false;
+  const scenario = value as Record<string, unknown>;
+  return isWholeNumberInRange(scenario.containers, 1, 64)
+    && isWholeNumberInRange(scenario.ports, 0, 16)
+    && isWholeNumberInRange(scenario.mounts, 0, 16)
+    && isWholeNumberInRange(scenario.baselineMs, 1, 60_000)
+    && isWholeNumberInRange(scenario.budgetMs, 50, 60_000);
+}
+
+export function isSavedScenario(value: unknown): value is SavedScenario {
+  if (!isScenarioInput(value)) return false;
+  const scenario = value as unknown as Record<string, unknown>;
+  return typeof scenario.predictedMs === "number"
+    && Number.isFinite(scenario.predictedMs)
+    && scenario.predictedMs >= 0
+    && (scenario.status === "comfortable" || scenario.status === "watch" || scenario.status === "exceeded");
+}
+
 export function calculateScenario(input: ScenarioInput): ScenarioResult {
   const bindingPressure = input.containers * input.ports;
   const mountPressure = input.containers * input.mounts;

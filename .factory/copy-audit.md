@@ -24,6 +24,10 @@ sentence exceeds 22 words and none uses a banned marketing term.
 | The complete CLI, safety behavior, JSON reports, and CSV export remain free. | 12 |
 | Refunds are handled there and revoke the license automatically. | 9 |
 | The token is stored only in this browser and verified with Sociobot. | 12 |
+| No estimate is available until every planner value is valid. | 10 |
+| Correct the planner inputs to create a command. | 8 |
+| Demo mode cannot restore licenses. | 5 |
+| Start for real first. | 4 |
 | No saved scenarios yet. | 4 |
 | Adjust the map above, then save a contour. | 8 |
 | A local tool for measuring safe container capacity. | 8 |

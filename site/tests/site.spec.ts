@@ -51,15 +51,39 @@ test("core planner works without a license and has no serious accessibility issu
 });
 
 test("@claim:demo-isolated loads sample data in its own namespace and resets it", async ({ page }) => {
+  const billingRequests: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().startsWith("https://api.sociobot.in/")) billingRequests.push(request.url());
+  });
+  const realData = {
+    "sb_scenarios:sandbox-capacity-probe": "real-scenarios-sentinel",
+    "sb_license:sandbox-capacity-probe": "real-license-sentinel",
+    "sb_license_verdict:sandbox-capacity-probe": "real-verdict-sentinel",
+    "sb_license_verify_attempt:sandbox-capacity-probe": "real-attempt-sentinel"
+  };
+  await page.addInitScript((entries) => {
+    for (const [key, value] of Object.entries(entries)) localStorage.setItem(key, value);
+  }, realData);
   await page.goto("/?demo=1#planner");
   await expect(page.locator("#demo-banner")).toBeVisible();
   await expect(page.locator("#containers")).toHaveValue("24");
-  expect(await page.evaluate(() => localStorage.getItem("sb_scenarios:sandbox-capacity-probe"))).toBeNull();
+  await expect(page.locator("#license-form")).toBeHidden();
+  await expect(page.locator("[data-real-only]")).toHaveCount(2);
+  await expect(page.locator("[data-real-only]:visible")).toHaveCount(0);
+  await page.evaluate(() => {
+    const input = document.querySelector<HTMLInputElement>("#license-token")!;
+    input.disabled = false;
+    input.value = "qa-demo-isolation-invalid";
+    document.querySelector<HTMLFormElement>("#license-form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+  });
+  await expect(page.locator("#license-status")).toContainText("Demo mode cannot restore licenses");
+  expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage).filter(([key]) => key.startsWith("sb_"))))).toEqual(realData);
+  expect(billingRequests).toEqual([]);
   expect(await page.evaluate(() => localStorage.getItem("demo:sandbox-capacity-probe:scenario"))).toContain('"containers":24');
   await page.locator("#containers").fill("30");
   await page.locator("#reset-demo").click();
   await expect(page.locator("#containers")).toHaveValue("24");
-  expect(await page.evaluate(() => localStorage.getItem("sb_scenarios:sandbox-capacity-probe"))).toBeNull();
+  expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage).filter(([key]) => key.startsWith("sb_"))))).toEqual(realData);
 });
 
 test("@claim:local-planner calculates the sample without a cross-origin request", async ({ page }) => {
@@ -101,9 +125,9 @@ test("@claim:offline-reload keeps the planner available after the first visit", 
   await page.goto("/?demo=1");
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload();
-  expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v3");
+  expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v4");
   await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())?.update(); });
-  expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v3");
+  expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v4");
   await context.setOffline(true);
   await page.reload();
   await expect(page.locator("#planner-title")).toBeVisible();
@@ -150,42 +174,72 @@ test("dark treatment has no serious accessibility violations", async ({ page }) 
   expect(await page.locator(".hero-image img").evaluate((image) => getComputedStyle(image).animationDuration)).toBe("1e-05s");
 });
 
-test("invalid numeric planner input keeps the last valid command and announces recovery", async ({ page }) => {
+test("invalid numeric planner input clears stale output and disables export until recovery", async ({ page }) => {
   await page.goto("/");
-  const command = await page.locator("#generated-command").textContent();
   await page.locator("#budget").fill("");
   await expect(page.locator("#planner-error")).toContainText("p95 budget must be a whole number between 50 and 60,000 ms");
-  await expect(page.locator("#generated-command")).toHaveText(command ?? "");
+  await expect(page.locator("#prediction")).toHaveText("—");
+  await expect(page.locator("#binding-count")).toHaveText("—");
+  await expect(page.locator("#headroom")).toHaveText("—");
+  await expect(page.locator("#generated-command")).toHaveText("Correct the planner inputs to create a command.");
+  await expect(page.locator("#export-csv")).toBeDisabled();
+  await expect(page.locator("#copy-command")).toBeDisabled();
   await page.locator("#budget").fill("1500");
   await page.locator("#budget").fill("49");
   await expect(page.locator("#planner-error")).toContainText("p95 budget must be a whole number between 50 and 60,000 ms");
-  await expect(page.locator("#generated-command")).toHaveText(command ?? "");
   await page.locator("#baseline").fill("60001");
   await expect(page.locator("#planner-error")).toContainText("Baseline startup must be a whole number between 1 and 60,000 ms");
   await page.locator("#budget").fill("1500");
   await page.locator("#baseline").fill("200");
   await expect(page.locator("#planner-error")).toBeHidden();
   await expect(page.locator("#generated-command")).toContainText("--startup-budget-ms 1500");
+  await expect(page.locator("#export-csv")).toBeEnabled();
 });
 
-test("fractional planner values keep the last valid command and explain the integer requirement", async ({ page }) => {
+test("fractional planner values cannot export stale calculation fields", async ({ page }) => {
   await page.goto("/");
-  const command = await page.locator("#generated-command").textContent();
+  await page.locator("#containers").fill("64");
+  await page.locator("#ports").fill("16");
+  await page.locator("#mounts").fill("16");
+  await page.locator("#baseline").fill("60000");
+  await page.locator("#budget").fill("60000");
+  await expect(page.locator("#prediction")).toHaveText("65027 ms");
   await page.locator("#budget").fill("50.5");
   await expect(page.locator("#planner-error")).toContainText("p95 budget must be a whole number");
   await expect(page.locator("#budget")).toHaveAttribute("aria-invalid", "true");
-  await expect(page.locator("#generated-command")).toHaveText(command ?? "");
+  await expect(page.locator("#prediction")).toHaveText("—");
+  await expect(page.locator("#headroom")).toHaveText("—");
+  await expect(page.locator("#export-csv")).toBeDisabled();
 });
 
-test("corrupt saved-scenario storage recovers without aborting initialization", async ({ page }) => {
+test("corrupt saved-scenario values recover without aborting initialization", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(String(error)));
-  await page.addInitScript(() => localStorage.setItem("sb_scenarios:sandbox-capacity-probe", "not-json"));
   await page.goto("/");
-  await expect(page.locator("#saved-scenarios")).toContainText("No saved scenarios yet");
-  await expect(page.locator("#connection-state")).toContainText("Online");
-  expect(await page.evaluate(() => localStorage.getItem("sb_scenarios:sandbox-capacity-probe"))).toBeNull();
+  for (const corrupt of ["not-json", "[null]", "[{}]", '[{"containers":0,"ports":1,"mounts":1,"baselineMs":1,"budgetMs":50,"predictedMs":1,"status":"comfortable"}]']) {
+    await page.evaluate((value) => localStorage.setItem("sb_scenarios:sandbox-capacity-probe", value), corrupt);
+    await page.reload();
+    await expect(page.locator("#saved-scenarios")).toContainText("No saved scenarios yet");
+    await expect(page.locator("#connection-state")).toContainText("Online");
+    expect(await page.evaluate(() => localStorage.getItem("sb_scenarios:sandbox-capacity-probe"))).toBeNull();
+  }
   expect(errors).toEqual([]);
+});
+
+test("corrupt demo values recover to the complete bundled sample", async ({ page }) => {
+  await page.goto("/?demo=1");
+  for (const corrupt of ['"bad-value"', "{}", '{"containers":24,"ports":4,"mounts":2,"baselineMs":0,"budgetMs":0}']) {
+    await page.evaluate((value) => localStorage.setItem("demo:sandbox-capacity-probe:scenario", value), corrupt);
+    await page.reload();
+    await expect(page.locator("#containers")).toHaveValue("24");
+    await expect(page.locator("#ports")).toHaveValue("4");
+    await expect(page.locator("#mounts")).toHaveValue("2");
+    await expect(page.locator("#baseline")).toHaveValue("240");
+    await expect(page.locator("#budget")).toHaveValue("1500");
+    expect(JSON.parse(await page.evaluate(() => localStorage.getItem("demo:sandbox-capacity-probe:scenario")) ?? "null")).toEqual({
+      containers: 24, ports: 4, mounts: 2, baselineMs: 240, budgetMs: 1500
+    });
+  }
 });
 
 test("metadata, targets, and designed 404 are shipped", async ({ page }) => {
@@ -333,6 +387,38 @@ test("@claim:cli-report-compare renders reports and checks the 25 percent predic
   const compared = runCli(["compare", reportPath, reportPath, "--json"]);
   expect(compared.status).toBe(0);
   expect(JSON.parse(compared.stdout)).toMatchObject({ absolute_error_percent: 0, within_25_percent: true, shape_matches: true });
+  for (const [field, value] of [
+    ["target", "different-host"],
+    ["runtime", "podman"],
+    ["context", "production-remote"],
+    ["image", "different/image:latest"]
+  ]) {
+    const incompatiblePath = join(dirname(reportPath), `capacity-${field}.json`);
+    const incompatible = structuredClone(report);
+    incompatible.config[field] = value;
+    writeFileSync(incompatiblePath, JSON.stringify(incompatible));
+    const rejected = runCli(["compare", reportPath, incompatiblePath, "--json"]);
+    expect(rejected.status, field).toBe(3);
+    expect(JSON.parse(rejected.stdout)).toMatchObject({
+      shape_matches: false,
+      mismatched_fields: [field]
+    });
+  }
+  const incompatiblePath = join(dirname(reportPath), "capacity-incompatible.json");
+  const incompatible = structuredClone(report);
+  Object.assign(incompatible.config, {
+    target: "different-host",
+    runtime: "podman",
+    context: "production-remote",
+    image: "different/image:latest"
+  });
+  writeFileSync(incompatiblePath, JSON.stringify(incompatible));
+  const rejected = runCli(["compare", reportPath, incompatiblePath, "--json"]);
+  expect(rejected.status).toBe(3);
+  expect(JSON.parse(rejected.stdout)).toMatchObject({
+    shape_matches: false,
+    mismatched_fields: ["target", "runtime", "context", "image"]
+  });
   const missedPath = join(dirname(reportPath), "capacity-missed.json");
   const missed = structuredClone(report);
   missed.levels.at(-1).p95_ms = report.model.predicted_p95_ms * 2;

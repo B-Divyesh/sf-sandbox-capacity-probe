@@ -4,7 +4,7 @@
     "claim": "Try sample data without saving it to your real planner data.",
     "where": "landing primary action, demo banner, README, and demo guide",
     "test": "npm run test:claims -- --grep '@claim:demo-isolated'",
-    "sandbox": "fresh browser context at /?demo=1; assert the bundled scenario, reset behavior, and demo-only storage namespace"
+    "sandbox": "fresh browser context at /?demo=1 with real-data sentinels; exercise the license submit path; assert no real key changes, billing requests, or visible purchase controls"
   },
   {
     "id": "local-planner",
@@ -60,7 +60,7 @@
     "claim": "The CLI produces JSON and human reports and compares prediction error against the 25 percent target.",
     "where": "landing method, README, and CLI help",
     "test": "npm run test:claims -- --grep '@claim:cli-report-compare'",
-    "sandbox": "render and compare the bundled report; assert machine fields, human output, zero error, and the within-25-percent verdict"
+    "sandbox": "render and compare the bundled report; assert the within-25-percent verdict and reject different target, runtime, context, or image identities"
   },
   {
     "id": "local-results",

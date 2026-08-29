@@ -1,5 +1,14 @@
 import "./styles.css";
-import { calculateScenario, csvForScenarios, probeCommand, type ScenarioInput } from "./planner";
+import {
+  calculateScenario,
+  csvForScenarios,
+  isSavedScenario,
+  isScenarioInput,
+  probeCommand,
+  type SavedScenario,
+  type ScenarioInput,
+  type ScenarioResult
+} from "./planner";
 
 const slug = "sandbox-capacity-probe";
 const licenseKey = `sb_license:${slug}`;
@@ -33,7 +42,7 @@ const readInput = (): ScenarioInput => ({
 });
 
 const demoMode = new URL(window.location.href).searchParams.get("demo") === "1";
-let current = calculateScenario(readInput());
+let current: (ScenarioInput & ScenarioResult) | null = null;
 let unlocked = false;
 
 function writeInput(input: ScenarioInput): void {
@@ -46,49 +55,76 @@ function writeInput(input: ScenarioInput): void {
 
 function inputError(): string | null {
   const fields: Array<[HTMLInputElement, string, number, number]> = [
+    [inputs.containers, "Concurrent containers", 1, 64],
+    [inputs.ports, "Ports per container", 0, 16],
+    [inputs.mounts, "Mounts per container", 0, 16],
     [inputs.baselineMs, "Baseline startup", 1, 60_000],
     [inputs.budgetMs, "p95 budget", 50, 60_000]
   ];
+  for (const [field] of fields) field.removeAttribute("aria-invalid");
   for (const [field, label, minimum, maximum] of fields) {
     const value = Number(field.value);
     if (!field.value || !Number.isFinite(value) || !Number.isInteger(value) || value < minimum || value > maximum) {
       field.setAttribute("aria-invalid", "true");
-      return `${label} must be a whole number between ${minimum.toLocaleString()} and ${maximum.toLocaleString()} ms. The last valid estimate remains shown.`;
+      const unit = field === inputs.baselineMs || field === inputs.budgetMs ? " ms" : "";
+      return `${label} must be a whole number between ${minimum.toLocaleString()} and ${maximum.toLocaleString()}${unit}. Correct it to calculate or export this scenario.`;
     }
-    field.removeAttribute("aria-invalid");
   }
   return null;
 }
 
-function renderPlanner(): void {
+function setPlannerActions(valid: boolean): void {
+  ($<HTMLButtonElement>("#export-csv")).disabled = !valid;
+  ($<HTMLButtonElement>("#copy-command")).disabled = !valid;
+  ($<HTMLButtonElement>("#save-scenario")).disabled = !valid || !unlocked;
+}
+
+function clearCalculatedFields(): void {
+  $("#prediction").textContent = "—";
+  $("#binding-count").textContent = "—";
+  $("#headroom").textContent = "—";
+  const status = $("#status");
+  status.textContent = "needs valid input";
+  delete status.dataset.status;
+  $("#planner-summary").textContent = "No estimate is available until every planner value is valid.";
+  $("#generated-command").textContent = "Correct the planner inputs to create a command.";
+}
+
+function renderPlanner(): boolean {
   const error = inputError();
   const errorElement = $("#planner-error");
   if (error) {
+    current = null;
     errorElement.textContent = error;
     errorElement.hidden = false;
-    return;
+    clearCalculatedFields();
+    setPlannerActions(false);
+    return false;
   }
   errorElement.textContent = "";
   errorElement.hidden = true;
   const input = readInput();
-  current = calculateScenario(input);
+  const result = calculateScenario(input);
+  current = { ...input, ...result };
   $("#container-value").textContent = String(input.containers);
   $("#port-value").textContent = String(input.ports);
   $("#mount-value").textContent = String(input.mounts);
-  $("#prediction").textContent = `${current.predictedMs} ms`;
-  $("#binding-count").textContent = String(current.bindingPressure);
-  $("#headroom").textContent = `${Math.abs(current.headroomMs)} ms ${current.headroomMs >= 0 ? "remaining" : "over"}`;
+  $("#prediction").textContent = `${result.predictedMs} ms`;
+  $("#binding-count").textContent = String(result.bindingPressure);
+  $("#headroom").textContent = `${Math.abs(result.headroomMs)} ms ${result.headroomMs >= 0 ? "remaining" : "over"}`;
   const status = $("#status");
-  status.textContent = current.status;
-  status.dataset.status = current.status;
-  $("#planner-summary").textContent = `Planning estimate: ${current.predictedMs} milliseconds p95, ${current.status}, with ${Math.abs(current.headroomMs)} milliseconds ${current.headroomMs >= 0 ? "headroom" : "over budget"}.`;
+  status.textContent = result.status;
+  status.dataset.status = result.status;
+  $("#planner-summary").textContent = `Planning estimate: ${result.predictedMs} milliseconds p95, ${result.status}, with ${Math.abs(result.headroomMs)} milliseconds ${result.headroomMs >= 0 ? "headroom" : "over budget"}.`;
   $("#generated-command").textContent = probeCommand(input);
+  setPlannerActions(true);
+  return true;
 }
 
 for (const input of Object.values(inputs)) {
   input.addEventListener("input", () => {
-    if (demoMode) localStorage.setItem(demoKey, JSON.stringify(readInput()));
-    renderPlanner();
+    const valid = renderPlanner();
+    if (demoMode && valid) localStorage.setItem(demoKey, JSON.stringify(readInput()));
   });
 }
 
@@ -101,7 +137,8 @@ function initDemo(): void {
   let saved: ScenarioInput | null = null;
   try {
     const value = localStorage.getItem(demoKey);
-    saved = value ? (JSON.parse(value) as ScenarioInput) : null;
+    const parsed: unknown = value ? JSON.parse(value) : null;
+    saved = isScenarioInput(parsed) ? parsed : null;
   } catch {
     saved = null;
   }
@@ -128,8 +165,8 @@ $("#copy-command").addEventListener("click", async () => {
 });
 
 $("#export-csv").addEventListener("click", () => {
-  const input = readInput();
-  const csv = csvForScenarios([{ ...input, ...current }]);
+  if (!current || inputError()) return;
+  const csv = csvForScenarios([current]);
   const link = document.createElement("a");
   link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
   link.download = "sandbox-capacity-scenario.csv";
@@ -144,9 +181,11 @@ function showLicenseState(valid: boolean, message: string): void {
   status.dataset.valid = String(valid);
   $("#pro-tools").hidden = !valid;
   $("#license-form").toggleAttribute("hidden", valid);
+  setPlannerActions(current !== null);
 }
 
 async function verifyLicense(token: string): Promise<void> {
+  if (demoMode) return;
   const lastAttempt = Number(localStorage.getItem(licenseAttemptKey) ?? "0");
   const retryAfterMs = 60_000 - (Date.now() - lastAttempt);
   if (retryAfterMs > 0) {
@@ -177,13 +216,25 @@ async function verifyLicense(token: string): Promise<void> {
 function parseVerdict(): { valid: boolean; checked_at: number } | null {
   try {
     const value = localStorage.getItem(verdictKey);
-    return value ? (JSON.parse(value) as { valid: boolean; checked_at: number }) : null;
+    if (!value) return null;
+    const parsed: unknown = JSON.parse(value);
+    if (
+      typeof parsed === "object"
+      && parsed !== null
+      && typeof (parsed as Record<string, unknown>).valid === "boolean"
+      && typeof (parsed as Record<string, unknown>).checked_at === "number"
+      && Number.isFinite((parsed as Record<string, number>).checked_at)
+    ) return parsed as { valid: boolean; checked_at: number };
+    localStorage.removeItem(verdictKey);
+    return null;
   } catch {
+    localStorage.removeItem(verdictKey);
     return null;
   }
 }
 
 function initLicense(): void {
+  if (demoMode) return;
   const url = new URL(window.location.href);
   const returnedLicense = url.searchParams.get("license");
   if (returnedLicense) {
@@ -200,6 +251,10 @@ function initLicense(): void {
 
 $("#license-form").addEventListener("submit", (event) => {
   event.preventDefault();
+  if (demoMode) {
+    $("#license-status").textContent = "Demo mode cannot restore licenses. Start for real first.";
+    return;
+  }
   const token = ($("#license-token") as HTMLInputElement).value.trim();
   if (!token) return;
   localStorage.setItem(licenseKey, token);
@@ -208,9 +263,17 @@ $("#license-form").addEventListener("submit", (event) => {
 });
 
 $("#save-scenario").addEventListener("click", () => {
-  if (!unlocked) return;
+  if (!unlocked || !current || inputError()) return;
   const scenarios = readSavedScenarios();
-  scenarios.push({ ...readInput(), predictedMs: current.predictedMs, status: current.status });
+  scenarios.push({
+    containers: current.containers,
+    ports: current.ports,
+    mounts: current.mounts,
+    baselineMs: current.baselineMs,
+    budgetMs: current.budgetMs,
+    predictedMs: current.predictedMs,
+    status: current.status
+  });
   localStorage.setItem(scenariosKey, JSON.stringify(scenarios.slice(-5)));
   renderSaved();
 });
@@ -232,12 +295,12 @@ function renderSaved(): void {
   }
 }
 
-type SavedScenario = ScenarioInput & { predictedMs: number; status: string };
-
 function readSavedScenarios(): SavedScenario[] {
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(scenariosKey) ?? "[]");
-    return Array.isArray(parsed) ? (parsed as SavedScenario[]).slice(-5) : [];
+    if (Array.isArray(parsed) && parsed.every(isSavedScenario)) return parsed.slice(-5);
+    localStorage.removeItem(scenariosKey);
+    return [];
   } catch {
     localStorage.removeItem(scenariosKey);
     return [];
@@ -260,6 +323,9 @@ if (!demoMode) {
   renderSaved();
   initLicense();
 } else {
+  document.querySelectorAll<HTMLElement>("[data-real-only]").forEach((element) => { element.hidden = true; });
+  $("#license-form").hidden = true;
+  ($<HTMLInputElement>("#license-token")).disabled = true;
   $("#license-status").textContent = "Demo mode keeps sample data separate. Start for real to restore a license.";
 }
 updateConnection();

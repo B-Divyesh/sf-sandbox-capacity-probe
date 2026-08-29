@@ -77,6 +77,7 @@ pub struct Comparison {
     pub absolute_error_percent: f64,
     pub within_25_percent: bool,
     pub shape_matches: bool,
+    pub mismatched_fields: Vec<String>,
 }
 
 pub fn percentile(values: &[f64], percentile: f64) -> f64 {
@@ -195,14 +196,38 @@ pub fn compare_reports(predicted: &Report, observed: &Report) -> Comparison {
     } else {
         100.0
     };
+    let mut mismatched_fields = Vec::new();
+    if predicted.schema_version != observed.schema_version {
+        mismatched_fields.push("schema_version".into());
+    }
+    if predicted.config.target != observed.config.target {
+        mismatched_fields.push("target".into());
+    }
+    if predicted.config.runtime != observed.config.runtime {
+        mismatched_fields.push("runtime".into());
+    }
+    if predicted.config.context != observed.config.context {
+        mismatched_fields.push("context".into());
+    }
+    if predicted.config.image != observed.config.image {
+        mismatched_fields.push("image".into());
+    }
+    if predicted.config.containers != observed.config.containers {
+        mismatched_fields.push("containers".into());
+    }
+    if predicted.config.ports_per_container != observed.config.ports_per_container {
+        mismatched_fields.push("ports_per_container".into());
+    }
+    if predicted.config.mounts_per_container != observed.config.mounts_per_container {
+        mismatched_fields.push("mounts_per_container".into());
+    }
     Comparison {
         predicted_p95_ms: prediction,
         observed_p95_ms: observed_p95,
         absolute_error_percent: round1(error),
         within_25_percent: error <= 25.0,
-        shape_matches: predicted.config.containers == observed.config.containers
-            && predicted.config.ports_per_container == observed.config.ports_per_container
-            && predicted.config.mounts_per_container == observed.config.mounts_per_container,
+        shape_matches: mismatched_fields.is_empty(),
+        mismatched_fields,
     }
 }
 
@@ -244,5 +269,38 @@ mod tests {
         let model = build_model(&levels, 4);
         assert_eq!(model.predicted_p95_ms, 150.0);
         assert_eq!(capacity_envelope(150.0, 100).status, "exceeded");
+    }
+
+    #[test]
+    fn comparison_rejects_different_runtime_identity_and_shape() {
+        let predicted: Report =
+            serde_json::from_str(include_str!("../examples/demo-capacity.json"))
+                .expect("bundled report");
+        for (field, observed) in [
+            ("target", {
+                let mut report = predicted.clone();
+                report.config.target = "different-host".into();
+                report
+            }),
+            ("runtime", {
+                let mut report = predicted.clone();
+                report.config.runtime = "podman".into();
+                report
+            }),
+            ("context", {
+                let mut report = predicted.clone();
+                report.config.context = "production-remote".into();
+                report
+            }),
+            ("image", {
+                let mut report = predicted.clone();
+                report.config.image = "different/image:latest".into();
+                report
+            }),
+        ] {
+            let comparison = compare_reports(&predicted, &observed);
+            assert!(!comparison.shape_matches, "{field} must be comparable");
+            assert_eq!(comparison.mismatched_fields, [field]);
+        }
     }
 }
