@@ -14,13 +14,13 @@ sentence exceeds 22 words and none uses a banned marketing term.
 | Start containers at quartile levels, measuring time-to-running while published bindings and mounts accumulate. | 14 |
 | Fit a conservative p95 trend and compare it with your startup budget: comfortable, watch, or exceeded. | 16 |
 | Repeat the same shape later. | 5 |
-| `scp compare` reports prediction error and whether it meets the 25% target. | 11 |
+| `capacity-probe compare` reports prediction error and whether it meets the 25% target. | 11 |
 | Production-like names are refused unless separately overridden. | 7 |
 | See the maximum starts, ports, mounts, and measurement levels without runtime access. | 12 |
 | Save JSON, repeat under controlled load, and quantify prediction accuracy. | 10 |
 | This local planner is a transparent planning estimate, not a benchmark. | 11 |
 | Use the generated command to replace it with evidence from your runtime. | 12 |
-| Planner Pro saves and compares up to five local scenarios. | 10 |
+| Planner Pro saves up to five local scenarios for side-by-side review. | 11 |
 | The complete CLI, safety behavior, JSON reports, and CSV export remain free. | 12 |
 | Refunds are handled there and revoke the license automatically. | 9 |
 | The token is stored only in this browser and verified with Sociobot. | 12 |

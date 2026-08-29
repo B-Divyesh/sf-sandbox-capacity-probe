@@ -2,7 +2,7 @@ use std::process::Command;
 
 #[test]
 fn claim_cli_demo_writes_a_bundled_sample_without_a_runtime() {
-    let output = Command::new(env!("CARGO_BIN_EXE_scp"))
+    let output = Command::new(env!("CARGO_BIN_EXE_capacity-probe"))
         .arg("--demo")
         .output()
         .expect("run bundled demo");

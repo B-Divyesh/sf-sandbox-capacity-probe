@@ -81,7 +81,7 @@ impl Runtime {
     pub fn run_sweep(&self, config: &SweepConfig<'_>) -> Result<SweepResult, String> {
         self.ensure_ready()?;
         let run_id = format!(
-            "scp-{}-{}",
+            "capacity-probe-{}-{}",
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap_or_default()

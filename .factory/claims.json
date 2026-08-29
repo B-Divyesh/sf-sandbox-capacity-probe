@@ -1,37 +1,86 @@
 [
   {
     "id": "demo-isolated",
-    "claim": "Try sample data without saving it to your planner.",
-    "where": "landing primary action and demo banner",
-    "test": "npx playwright test --grep '@claim:demo-isolated'",
-    "sandbox": "fresh browser context at /?demo=1; assert the demo banner, bundled scenario, and demo-only storage namespace"
+    "claim": "Try sample data without saving it to your real planner data.",
+    "where": "landing primary action, demo banner, README, and demo guide",
+    "test": "npm run test:claims -- --grep '@claim:demo-isolated'",
+    "sandbox": "fresh browser context at /?demo=1; assert the bundled scenario, reset behavior, and demo-only storage namespace"
   },
   {
     "id": "local-planner",
-    "claim": "Planner runs locally.",
+    "claim": "The website planner calculates scenarios locally.",
     "where": "landing facts and planner",
-    "test": "npx playwright test --grep '@claim:local-planner'",
-    "sandbox": "fresh browser context at /?demo=1; change a scenario and assert no cross-origin request is made"
+    "test": "npm run test:claims -- --grep '@claim:local-planner'",
+    "sandbox": "fresh browser context at /?demo=1; change a scenario, assert the result, and assert no cross-origin request"
   },
   {
     "id": "no-telemetry",
-    "claim": "No telemetry.",
-    "where": "landing facts, README, and privacy page",
-    "test": "npx playwright test --grep '@claim:no-telemetry'",
-    "sandbox": "fresh browser context at /?demo=1; record all requests during planner use and assert only the product origin is contacted"
+    "claim": "The website and CLI send no telemetry.",
+    "where": "landing facts, footer, CLI help, README, and privacy page",
+    "test": "npm run test:claims -- --grep '@claim:no-telemetry'",
+    "sandbox": "record browser requests during the complete demo flow and run the CLI demo with unreachable proxy endpoints"
   },
   {
     "id": "csv-export",
-    "claim": "Exports this scenario as CSV.",
-    "where": "planner export button",
-    "test": "npx playwright test --grep '@claim:csv-export'",
-    "sandbox": "fresh browser context at /?demo=1; download CSV and assert its header and sample row"
+    "claim": "Export the current scenario as CSV without a license.",
+    "where": "planner export button, paid-tier copy, and README",
+    "test": "npm run test:claims -- --grep '@claim:csv-export'",
+    "sandbox": "fresh demo; download CSV and assert its header and bundled sample row"
   },
   {
     "id": "offline-reload",
     "claim": "Read the planner offline after the first visit.",
-    "where": "privacy page",
-    "test": "npx playwright test --grep '@claim:offline-reload'",
-    "sandbox": "fresh browser context; install the service worker online, reload under offline mode, and assert the planner remains visible"
+    "where": "connection state, README, and privacy page",
+    "test": "npm run test:claims -- --grep '@claim:offline-reload'",
+    "sandbox": "install and update the service worker online, then reload the demo under offline mode"
+  },
+  {
+    "id": "cli-demo",
+    "claim": "The CLI demo needs no runtime or network and writes its bundled report to a temporary directory.",
+    "where": "CLI help, README, and demo guide",
+    "test": "npm run test:claims -- --grep '@claim:cli-demo'",
+    "sandbox": "run the compiled CLI demo without Docker or Podman; parse the printed temporary path and validate its JSON"
+  },
+  {
+    "id": "cli-safety-bounds",
+    "claim": "The CLI refuses production markers by default and enforces the documented workload bounds.",
+    "where": "landing method, CLI help, README, and terms",
+    "test": "npm run test:claims -- --grep '@claim:cli-safety-bounds'",
+    "sandbox": "assert separator-free production names fail; assert the exact maximum succeeds and an over-limit plan fails"
+  },
+  {
+    "id": "cli-isolated-cleanup",
+    "claim": "The CLI uses an internal labeled network, localhost-only published ports, read-only mounts, and cleans up after success or an ordinary error.",
+    "where": "README and terms",
+    "test": "npm run test:claims -- --grep '@claim:cli-isolated-cleanup'",
+    "sandbox": "run against a deterministic fake Docker executable and inspect every create, run, and cleanup argument"
+  },
+  {
+    "id": "cli-report-compare",
+    "claim": "The CLI produces JSON and human reports and compares prediction error against the 25 percent target.",
+    "where": "landing method, README, and CLI help",
+    "test": "npm run test:claims -- --grep '@claim:cli-report-compare'",
+    "sandbox": "render and compare the bundled report; assert machine fields, human output, zero error, and the within-25-percent verdict"
+  },
+  {
+    "id": "local-results",
+    "claim": "CLI probe results are written only to the local path the operator requests.",
+    "where": "README and privacy page",
+    "test": "npm run test:claims -- --grep '@claim:local-results'",
+    "sandbox": "run a bounded probe against a local fake runtime, request a temporary output path, and validate the report there"
+  },
+  {
+    "id": "planner-pro-five",
+    "claim": "Planner Pro saves the five latest scenarios locally for side-by-side review.",
+    "where": "paid-tier section, README, and terms",
+    "test": "npm run test:claims -- --grep '@claim:planner-pro-five'",
+    "sandbox": "mock one valid Sociobot verdict, save six scenarios, and assert only the latest five appear and remain in local storage"
+  },
+  {
+    "id": "license-policy",
+    "claim": "License tokens stay in browser storage; manual checks are limited to one per minute and automatic checks to one per day.",
+    "where": "license form, README, and privacy page",
+    "test": "npm run test:claims -- --grep '@claim:license-policy'",
+    "sandbox": "mock the documented Sociobot endpoint; assert local token storage, one manual request, local throttling, and no automatic repeat"
   }
 ]

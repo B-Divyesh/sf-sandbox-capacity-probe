@@ -1,6 +1,6 @@
 # Sandbox Capacity Probe
 
-Sandbox Capacity Probe (`scp`) is a local-first CLI for teams planning many isolated agent or customer containers. It runs a bounded synthetic sweep against an explicitly confirmed Docker or Podman host, measures container startup latency, counts published port bindings, and writes a portable capacity envelope.
+Sandbox Capacity Probe (`capacity-probe`) is a local-first CLI for teams planning many isolated agent or customer containers. It runs a bounded synthetic sweep against an explicitly confirmed Docker or Podman host, measures container startup latency, counts published port bindings, and writes a portable capacity envelope.
 
 It does not run untrusted workloads, orchestrate a cluster, or benchmark third-party systems. It has no telemetry.
 
@@ -10,7 +10,7 @@ Build the single binary with stable Rust:
 
 ```sh
 cargo install --path cli
-scp --help
+capacity-probe --help
 ```
 
 The factory can publish the crate with `cargo package --manifest-path cli/Cargo.toml`; registry credentials are intentionally not included.
@@ -20,8 +20,8 @@ The factory can publish the crate with `cargo package --manifest-path cli/Cargo.
 Run a realistic sample without Docker, Podman, or a network connection:
 
 ```sh
-scp demo
-# or: scp --demo
+capacity-probe demo
+# or: capacity-probe --demo
 ```
 
 The command writes `capacity-demo.json` in a process-specific temporary directory
@@ -33,14 +33,14 @@ and prints the exact path. It never measures your host. Use the website demo at
 First inspect the plan without changing the runtime:
 
 ```sh
-scp probe --target dev-laptop --confirm dev-laptop --containers 8 \
+capacity-probe probe --target dev-laptop --confirm dev-laptop --containers 8 \
   --ports-per-container 2 --mounts 1 --samples 2 --dry-run
 ```
 
 Then run the controlled probe and keep the machine-readable report:
 
 ```sh
-scp probe --target staging-west --confirm staging-west --runtime auto \
+capacity-probe probe --target staging-west --confirm staging-west --runtime auto \
   --containers 12 --ports-per-container 2 --mounts 1 --samples 3 \
   --output capacity.json
 ```
@@ -48,11 +48,11 @@ scp probe --target staging-west --confirm staging-west --runtime auto \
 For scripts, send JSON to stdout and progress to stderr:
 
 ```sh
-scp probe --target ci-runner --confirm ci-runner --containers 4 \
+capacity-probe probe --target ci-runner --confirm ci-runner --containers 4 \
   --samples 1 --json --ci > capacity.json
 ```
 
-`--target` is a human safety label, not a remote hostname. The probe uses the selected runtime’s current context (`docker context show`, `DOCKER_HOST`, or Podman connection). The confirmation must exactly match the target. Labels or runtime contexts containing `prod`, `production`, or `live` are refused unless `--allow-production` is explicitly present. Hard bounds are 64 containers, 16 published ports per container, 16 mounts, and 10 samples.
+`--target` is a human safety label, not a remote hostname. The probe uses the selected runtime’s current context (`docker context show`, `DOCKER_HOST`, or Podman connection). The confirmation must exactly match the target. Production markers such as `prod`, `production`, or `live` are refused even when joined to digits or other words unless `--allow-production` is explicitly present. Hard bounds are 64 containers, 16 published ports per container, 16 mounts, and 10 samples.
 
 The CLI creates a labeled, internal synthetic network and labeled sleeping containers. Published ports bind only to `127.0.0.1` with runtime-assigned host ports. Cleanup runs after success and ordinary errors; interrupted runs can be removed by label:
 
@@ -71,7 +71,7 @@ The report includes host/runtime metadata, per-start observations, p50/p95, obse
 - `2`: invalid or unsafe request, missing runtime, or probe failure
 - `3`: measurements completed but the capacity envelope was exceeded
 
-Run `scp explain capacity.json` to render a saved JSON report for a human review.
+Run `capacity-probe explain capacity.json` to render a saved JSON report for a human review.
 
 ## Website
 
@@ -102,11 +102,11 @@ npm run build
 
 Docker/Podman integration tests are opt-in because they create containers: `SCP_RUNTIME_TEST=docker cargo test --manifest-path cli/Cargo.toml --test runtime`.
 
-Every visitor-facing website claim is listed in `.factory/claims.json`. Run its
-exact clean-demo checks after `npm run build:site`, for example:
+Every visitor-facing product claim is listed in `.factory/claims.json`. Each
+listed command builds its prerequisites from a clean installed checkout:
 
 ```sh
-npx playwright test --grep '@claim:demo-isolated'
+npm run test:claims -- --grep '@claim:demo-isolated'
 ```
 
 ## Privacy and licensing

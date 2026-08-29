@@ -40,6 +40,6 @@
   },
   "caveats": [
     "This is bundled sample data, not evidence about your host.",
-    "Run scp probe against an explicitly confirmed non-production runtime for a real measurement."
+    "Run capacity-probe probe against an explicitly confirmed non-production runtime for a real measurement."
   ]
 }

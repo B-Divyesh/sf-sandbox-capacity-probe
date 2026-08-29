@@ -8,7 +8,7 @@ export default defineConfig({
     trace: "retain-on-failure"
   },
   webServer: {
-    command: "npx vite preview --config site/vite.config.ts --host 127.0.0.1 --port 4173",
+    command: "npm run build:site && npx vite preview --config site/vite.config.ts --host 127.0.0.1 --port 4173",
     url: "http://127.0.0.1:4173",
     reuseExistingServer: true
   },

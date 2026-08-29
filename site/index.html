@@ -48,7 +48,7 @@
     <main id="main" tabindex="-1">
       <section class="hero" aria-labelledby="hero-title">
         <figure class="hero-image">
-          <img src="/topographic-envelope.webp" srcset="/topographic-envelope-700.webp 700w, /topographic-envelope.webp 1400w" sizes="100vw" width="1400" height="933" fetchpriority="high" alt="Topographic paper terrain with container-shaped markers following a measured route to a bounded plateau" />
+          <picture><source media="(max-width: 760px)" srcset="/topographic-envelope-700.webp" /><img src="/topographic-envelope.webp" width="1400" height="933" fetchpriority="high" alt="Topographic paper terrain with container-shaped markers following a measured route to a bounded plateau" /></picture>
         </figure>
         <div class="hero-grid shell">
           <div class="hero-copy">
@@ -80,7 +80,7 @@
         <div class="proof-grid">
           <article class="proof"><span class="proof-index">COORD / A</span><h3>Observe the slope</h3><p>Start containers at quartile levels, measuring time-to-running while published bindings and mounts accumulate.</p></article>
           <article class="proof"><span class="proof-index">COORD / B</span><h3>Mark the contour</h3><p>Fit a conservative p95 trend and compare it with your startup budget: comfortable, watch, or exceeded.</p></article>
-          <article class="proof"><span class="proof-index">COORD / C</span><h3>Walk it again</h3><p>Repeat the same shape later. <code>scp compare</code> reports prediction error and whether it meets the 25% target.</p></article>
+          <article class="proof"><span class="proof-index">COORD / C</span><h3>Walk it again</h3><p>Repeat the same shape later. <code>capacity-probe compare</code> reports prediction error and whether it meets the 25% target.</p></article>
         </div>
       </section>
 
@@ -96,9 +96,9 @@
             </ol>
           </div>
           <div class="terminal" aria-label="Example terminal session">
-            <div class="terminal-bar"><span>staging-west / survey</span><span>scp 0.1.0</span></div>
+            <div class="terminal-bar"><span>staging-west / survey</span><span>capacity-probe 0.1.0</span></div>
             <pre tabindex="0"><span class="prompt">$</span> cargo install --path cli
-<span class="prompt">$</span> scp probe \
+<span class="prompt">$</span> capacity-probe probe \
   --target staging-west \
   --confirm staging-west \
   --containers 12 \
@@ -117,7 +117,7 @@ Sandbox capacity envelope
      12       3  326ms   351ms         24
 
   <span class="safe">COMFORTABLE — predicted p95 351ms</span>
-  Next: repeat, then run scp compare.</pre>
+  Next: repeat, then run capacity-probe compare.</pre>
           </div>
         </div>
       </section>
@@ -149,7 +149,7 @@ Sandbox capacity envelope
                   <div class="metric"><span>Budget position</span><strong id="headroom">1,170 ms remaining</strong></div>
                 </div>
                 <p class="estimate-note" id="planner-summary" aria-live="polite">Planning estimate: 330 milliseconds p95, comfortable, with 1170 milliseconds headroom.</p>
-                <div class="command-block"><code id="generated-command">scp probe --target staging-west --confirm staging-west --containers 12 --ports-per-container 2 --mounts 1 --samples 3 --startup-budget-ms 1500 --output capacity.json</code><button id="copy-command" type="button">Copy command</button></div>
+                <div class="command-block"><code id="generated-command">capacity-probe probe --target staging-west --confirm staging-west --containers 12 --ports-per-container 2 --mounts 1 --samples 3 --startup-budget-ms 1500 --output capacity.json</code><button id="copy-command" type="button">Copy command</button></div>
                 <div class="planner-actions"><button class="button secondary" id="export-csv" type="button">Export CSV</button></div>
               </div>
             </div>
@@ -162,12 +162,12 @@ Sandbox capacity envelope
           <div>
             <p class="map-label">Operator pack / 04</p>
             <h2 id="pro-title">Keep several routes on the same map.</h2>
-            <p class="lede">Planner Pro saves and compares up to five local scenarios. The complete CLI, safety behavior, JSON reports, and CSV export remain free.</p>
+            <p class="lede">Planner Pro saves up to five local scenarios for side-by-side review. The complete CLI, safety behavior, JSON reports, and CSV export remain free.</p>
             <p class="price">$39 <small>one-time purchase</small></p>
             <ul class="feature-list">
               <li>Save five planning contours on this device</li>
               <li>Compare fleet shapes before running probes</li>
-              <li>Future Planner Pro updates for this product</li>
+              <li>Keep only the five latest local scenarios</li>
             </ul>
             <a class="button survey" href="https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/checkout">Buy Planner Pro</a>
             <p class="estimate-note">Sociobot/Dodo is the merchant of record. Refunds are handled there and revoke the license automatically. See <a href="/privacy/">privacy</a> and <a href="/terms/">terms</a>.</p>

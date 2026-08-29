@@ -13,7 +13,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Parser, Debug)]
 #[command(
-    name = "scp",
+    name = "capacity-probe",
     version,
     about = "Find the safe operating envelope for a Docker or Podman sandbox shape",
     long_about = "Sandbox Capacity Probe runs a bounded synthetic container sweep on an explicitly confirmed non-production runtime, then reports startup percentiles, published-port pressure, firewall rule evidence, and a capacity envelope. No telemetry; results stay local."
@@ -34,7 +34,7 @@ enum Command {
     Probe(ProbeArgs),
     /// Render a saved JSON report for a human review
     Explain {
-        /// Path to a JSON report created by `scp probe`
+        /// Path to a JSON report created by `capacity-probe probe`
         report: PathBuf,
     },
     /// Compare an earlier prediction with a subsequent controlled run
@@ -183,7 +183,7 @@ fn execute(cli: Cli) -> Result<u8, String> {
             )
         }
         None => Err(
-            "choose a command such as `scp probe`, or run `scp demo` for the bundled sample".into(),
+            "choose a command such as `capacity-probe probe`, or run `capacity-probe demo` for the bundled sample".into(),
         ),
     }
 }
@@ -299,7 +299,7 @@ fn probe(args: ProbeArgs) -> Result<u8, String> {
         caveats: vec![
             "Results apply to this runtime, host, image cache state, and background load.".into(),
             "Published bindings are the portable rule-pressure measure; a host firewall count is included only when readable.".into(),
-            "Validate the prediction with a subsequent controlled run and `scp compare`.".into(),
+            "Validate the prediction with a subsequent controlled run and `capacity-probe compare`.".into(),
         ],
     };
     if let Some(path) = args.output.as_deref() {
@@ -355,10 +355,27 @@ fn bounded(name: &str, value: u16, minimum: u16, maximum: u16) -> Result<(), Str
 }
 
 fn is_production_like(value: &str) -> bool {
-    value
-        .to_ascii_lowercase()
+    let normalized = value.to_ascii_lowercase();
+    if normalized.contains("production") {
+        return true;
+    }
+    if normalized
         .split(|character: char| !character.is_ascii_alphanumeric())
-        .any(|part| matches!(part, "prod" | "production" | "live"))
+        .any(|part| matches!(part, "prod" | "live"))
+    {
+        return true;
+    }
+    ["prod", "live"].iter().any(|marker| {
+        normalized.strip_prefix(marker).is_some_and(|suffix| {
+            suffix.is_empty() || suffix.starts_with(|character: char| character.is_ascii_digit())
+        }) || normalized.strip_suffix(marker).is_some_and(|prefix| {
+            prefix.is_empty()
+                || prefix
+                    .chars()
+                    .last()
+                    .is_some_and(|character| !character.is_ascii_alphabetic())
+        })
+    })
 }
 
 fn write_report(path: &Path, report: &Report) -> Result<(), String> {
@@ -405,7 +422,9 @@ fn print_report(report: &Report) {
     );
     println!("  {}", report.envelope.explanation);
     println!("  Rule evidence: {}", report.host.rule_count_method);
-    println!("  Next: repeat the same shape, then run `scp compare first.json second.json`.");
+    println!(
+        "  Next: repeat the same shape, then run `capacity-probe compare first.json second.json`."
+    );
 }
 
 #[cfg(test)]
@@ -416,7 +435,7 @@ mod tests {
     #[test]
     fn documented_dry_run_parses_and_executes() {
         let cli = Cli::try_parse_from([
-            "scp",
+            "capacity-probe",
             "probe",
             "--target",
             "dev-laptop",
@@ -438,7 +457,7 @@ mod tests {
 
     #[test]
     fn bundled_demo_parses_and_runs_without_a_runtime() {
-        let cli = Cli::try_parse_from(["scp", "--demo"]).unwrap();
+        let cli = Cli::try_parse_from(["capacity-probe", "--demo"]).unwrap();
         assert_eq!(execute(cli), Ok(0));
     }
 
@@ -446,7 +465,7 @@ mod tests {
     fn refuses_mismatched_confirmation_and_production() {
         let parse = |target: &str, confirm: &str| {
             Cli::try_parse_from([
-                "scp",
+                "capacity-probe",
                 "probe",
                 "--target",
                 target,
@@ -463,6 +482,11 @@ mod tests {
     #[test]
     fn production_detection_avoids_substring_false_positives() {
         assert!(is_production_like("us-production-1"));
+        assert!(is_production_like("productionwest"));
+        assert!(is_production_like("customerproduction"));
+        assert!(is_production_like("prod1"));
+        assert!(is_production_like("live01"));
         assert!(!is_production_like("olive-branch"));
+        assert!(!is_production_like("product-test"));
     }
 }

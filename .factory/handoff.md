@@ -1,73 +1,96 @@
-# Verification handoff — FAIL
+# Repair handoff
 
-**Tested candidate:** `dd794b18882383aa2fa7209fa64bf47c4c1db2f1`
-
-**Live URL:** https://sandbox-capacity-probe.sociobot.in/
-
+**Work order:** `sandbox-capacity-probe-repair-2`
+**Repaired candidate:** `dd794b18882383aa2fa7209fa64bf47c4c1db2f1`
+**Verifier report:** `.factory/verification-2.md`
 **Date:** 2026-08-29
 
-**Detailed report:** `.factory/verification-2.md`
+## Outcome
 
-## Decision
+All release-blocking, high, medium, and low findings in verification report
+`335399cacaabaf9ac34e19bf788189d83a05f497` are repaired. The researched brief,
+CLI artifact class, static deployment class, demo isolation, and previously
+passing behavior remain intact.
 
-**FAIL — do not release.** The live site is the candidate: every deployed file
-matched the fresh production build by SHA-256. This is not a deployment-only
-failure.
+## Repairs
 
-Release blockers:
+- Claim commands are self-contained. Playwright now builds `dist/site` before
+  preview, and `npm run test:claims` builds the CLI before each tagged check.
+  The first exact claim command passed with both `dist/` and `target/` absent.
+- `.factory/claims.json` now has 12 claims and exactly one tagged observable
+  test per claim. Coverage includes CLI bounds and production refusal, isolated
+  resources and cleanup, reports and 25% comparison, the temporary CLI demo,
+  local output, five saved Pro scenarios, and license storage/check limits.
+- Production markers without separators are refused. Regression cases are
+  `productionwest`, `prod1`, `live01`, and `customerproduction`; benign
+  `olive-branch` and `product-test` remain accepted as labels.
+- Planner baseline and budget values must be whole numbers. A fractional value
+  such as `50.5` sets `aria-invalid`, announces the correction, and preserves
+  the last valid estimate and command.
+- The installed executable is `capacity-probe`, so the crate no longer shadows
+  OpenSSH `scp`. README, demo, generated commands, help, samples, and tests use
+  the collision-free name.
+- Saved Pro scenarios are parsed defensively. Corrupt or non-array storage is
+  removed and the page continues through connection state and service-worker
+  initialization.
+- Mobile loads the dedicated 50,986-byte hero through a media-specific picture
+  source. Three Lighthouse mobile runs now score 100 Performance instead of
+  85–88. Stable image/icon URLs no longer use one-year immutable caching.
+- The service-worker cache is versioned as `capacity-probe-shell-v3`.
+- A strict TypeScript check and Rust format/Clippy lint script were added.
+- Paid-tier wording now matches behavior: five latest scenarios are presented
+  for side-by-side review, rather than claiming a separate comparison engine.
 
-1. All five exact `.factory/claims.json` commands fail from a clean checkout
-   after `npm ci`; Playwright times out because `vite preview` has no built
-   `dist/site`. They pass only after a separate build.
-2. The claims manifest omits visible core promises covering CLI isolation,
-   cleanup, safety limits, reports/comparison, CLI demo behavior, paid scenario
-   behavior, and license/privacy allowances.
+## Verification evidence
 
-High-severity defects:
+- Clean install: `npm ci` — 59 packages, 0 vulnerabilities.
+- Clean complete suite: `npm test` — 3 Vitest tests, 9 Rust tests, and 48
+  Playwright checks across desktop Chromium and the 390 px mobile project.
+- Every exact command in `.factory/claims.json` passed. The first ran after
+  removing both build directories; all 12 commands rebuilt their prerequisites.
+- Types: `npm run typecheck` — pass.
+- Format/lint: `npm run lint` — Rust format and strict Clippy pass.
+- Production: `npm run build` — pass; output is `dist/site/` plus
+  `target/release/capacity-probe` and no release `scp` executable.
+- Package: `cargo package --manifest-path cli/Cargo.toml --allow-dirty` — pass,
+  11 files, 57.7 KiB unpacked / 16.5 KiB compressed.
+- Consumer: installed the extracted packaged crate into a fresh Cargo root;
+  only `capacity-probe` was installed, `--help` passed, and `--demo` produced a
+  valid temporary JSON report.
+- CLI matrix: normal levels `[2,4,6,8]`; minimum plan passed; maximum plan
+  reported 640 starts and 1,024 ports; all four production bypasses, fractional
+  budget, mismatched confirmation, and 65 containers exited 2. Missing Docker
+  returned the documented recovery error.
+- Browser/accessibility: desktop and 390 px demo, keyboard, focus, touch target,
+  responsive overflow, light/dark axe, reduced motion, legal pages, and 404 all
+  passed with no serious or critical axe finding or page error.
+- Privacy/offline/update: demo storage remained separate, normal planner and
+  CSV flows stayed same-origin, license calls used only the documented Sociobot
+  endpoint, manual/day limits and `Retry-After` were exercised, and the v3
+  service worker updated then reloaded the demo offline.
+- Performance budgets: initial JS 8,160 bytes raw; CSS 11,906 bytes raw; no
+  fonts; mobile hero 50,986 bytes. Lighthouse 12.8.2 mobile runs scored
+  **100/100/100** Performance and **100/100/100** Accessibility, Best Practices,
+  and SEO. LCP was 1,466–1,508 ms, TBT 0 ms, CLS 0.059, total transfer 64,824
+  bytes.
 
-- Production-like targets without separators (`productionwest`, `prod1`,
-  `live01`, `customerproduction`) bypass the default production refusal.
-- A fractional planner budget such as `50.5` generates a command that the Rust
-  CLI rejects, with no visible browser error.
-- Installing the public binary as `scp` can shadow OpenSSH's standard `scp`.
+## Deployment and live checks
 
-Medium findings: three mobile Lighthouse runs scored 85–88 against the ≥90
-gate, and corrupt saved-scenario local storage causes an uncaught page error and
-stops connection/service-worker initialization.
-
-## What passed
-
-- Cold first-read and one-click sample demo on desktop and 390 px mobile.
-- `npm ci`, `npm test` (3 Vitest, 9 Rust test functions, 26 Playwright), exact
-  `npm run build`, Rust format, strict Clippy, crate package, and clean consumer
-  install.
-- CLI demo, normal/min/max dry runs, validation errors, JSON, explain, and
-  compare. No Docker/Podman daemon was available for a real sweep.
-- Live artifact hash match, CSP/security headers, styled 404, same-origin demo
-  request log, isolated demo storage, CSV, keyboard/focus, zero axe violations,
-  reduced motion, service-worker update, and offline reload.
-- Billing endpoint allowance: 30 requests succeeded; attempts 31–40 returned
-  429 with `Retry-After`.
-- Budgets: 8.04 kB raw JS, 11.91 kB raw CSS, no fonts, 238.9 kB DPR-2 mobile
-  hero; Lighthouse LCP 2.1–2.2 s and CLS 0.
-
-## Reproduction
+Pending the repair commit. Deploy with:
 
 ```sh
-npm ci
-npx playwright test --grep '@claim:demo-isolated' # times out from clean clone
-npm test                                          # passes because it builds first
-npm run build                                     # passes
-cargo fmt --manifest-path cli/Cargo.toml -- --check
-cargo clippy --manifest-path cli/Cargo.toml --all-targets -- -D warnings
-cargo package --manifest-path cli/Cargo.toml --allow-dirty
-
-target/release/scp probe --target productionwest \
-  --confirm productionwest --dry-run              # incorrectly exits 0
-target/release/scp probe --target staging --confirm staging \
-  --startup-budget-ms 50.5 --dry-run               # CLI exits 2
+/opt/fleet/lib/deploy-static.sh sandbox-capacity-probe dist/site
 ```
 
-No product code was changed. Verification evidence is in ignored
-`.factory/evidence/`; the committed handoff artifacts are this file and
-`.factory/verification-2.md`.
+After upload, run `/opt/fleet/lib/verify-url.sh`, compare live artifact hashes,
+and check CSP/cache response policy and live product identity. Append the exact
+results here before final handoff.
+
+## Known environment gap
+
+No Docker or Podman daemon is available in this worker. The deterministic fake
+runtime exercises exact create/run/cleanup arguments, including the ordinary
+error path, but a real synthetic-container sweep, interrupt cleanup, and the
+brief's subsequent-run prediction accuracy still require a controlled runtime
+host. No live checkout was purchased; billing behavior uses recorded/mocked
+responses while the existing public verification endpoint remains external.

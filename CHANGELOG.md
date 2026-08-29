@@ -5,3 +5,4 @@
 - Initial bounded Docker/Podman capacity probe.
 - JSON report and human-readable capacity envelope.
 - Static documentation, local scenario planner, and one-time Planner Pro unlock.
+- Install the collision-free `capacity-probe` binary name instead of shadowing OpenSSH `scp`.

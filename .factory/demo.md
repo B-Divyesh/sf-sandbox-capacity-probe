@@ -11,7 +11,7 @@ storage key `demo:sandbox-capacity-probe:scenario`; normal license and saved
 scenario keys are never read or written in demo mode. Leaving demo removes that
 key.
 
-For the CLI, run either `scp demo` or `scp --demo`. It writes the bundled,
+For the CLI, run either `capacity-probe demo` or `capacity-probe --demo`. It writes the bundled,
 realistic sample report to a process-specific temporary directory and prints its
 path. It never contacts Docker, Podman, or a network service. The sample source
 ships at `cli/examples/demo-capacity.json`.

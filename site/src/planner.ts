@@ -31,7 +31,7 @@ export function calculateScenario(input: ScenarioInput): ScenarioResult {
 }
 
 export function probeCommand(input: ScenarioInput, target = "staging-west"): string {
-  return `scp probe --target ${target} --confirm ${target} --containers ${input.containers} --ports-per-container ${input.ports} --mounts ${input.mounts} --samples 3 --startup-budget-ms ${input.budgetMs} --output capacity.json`;
+  return `capacity-probe probe --target ${target} --confirm ${target} --containers ${input.containers} --ports-per-container ${input.ports} --mounts ${input.mounts} --samples 3 --startup-budget-ms ${input.budgetMs} --output capacity.json`;
 }
 
 export function csvForScenarios(scenarios: Array<ScenarioInput & ScenarioResult>): string {

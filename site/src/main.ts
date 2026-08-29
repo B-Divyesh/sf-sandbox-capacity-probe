@@ -51,9 +51,9 @@ function inputError(): string | null {
   ];
   for (const [field, label, minimum, maximum] of fields) {
     const value = Number(field.value);
-    if (!field.value || !Number.isFinite(value) || value < minimum || value > maximum) {
+    if (!field.value || !Number.isFinite(value) || !Number.isInteger(value) || value < minimum || value > maximum) {
       field.setAttribute("aria-invalid", "true");
-      return `${label} must be between ${minimum.toLocaleString()} and ${maximum.toLocaleString()} ms. The last valid estimate remains shown.`;
+      return `${label} must be a whole number between ${minimum.toLocaleString()} and ${maximum.toLocaleString()} ms. The last valid estimate remains shown.`;
     }
     field.removeAttribute("aria-invalid");
   }
@@ -209,7 +209,7 @@ $("#license-form").addEventListener("submit", (event) => {
 
 $("#save-scenario").addEventListener("click", () => {
   if (!unlocked) return;
-  const scenarios = JSON.parse(localStorage.getItem(scenariosKey) ?? "[]") as Array<ScenarioInput & { predictedMs: number; status: string }>;
+  const scenarios = readSavedScenarios();
   scenarios.push({ ...readInput(), predictedMs: current.predictedMs, status: current.status });
   localStorage.setItem(scenariosKey, JSON.stringify(scenarios.slice(-5)));
   renderSaved();
@@ -217,7 +217,7 @@ $("#save-scenario").addEventListener("click", () => {
 
 function renderSaved(): void {
   const list = $("#saved-scenarios");
-  const scenarios = JSON.parse(localStorage.getItem(scenariosKey) ?? "[]") as Array<ScenarioInput & { predictedMs: number; status: string }>;
+  const scenarios = readSavedScenarios();
   list.replaceChildren();
   if (!scenarios.length) {
     const item = document.createElement("li");
@@ -229,6 +229,18 @@ function renderSaved(): void {
     const item = document.createElement("li");
     item.textContent = `${scenario.containers} containers × ${scenario.ports} ports — ${scenario.predictedMs} ms (${scenario.status})`;
     list.append(item);
+  }
+}
+
+type SavedScenario = ScenarioInput & { predictedMs: number; status: string };
+
+function readSavedScenarios(): SavedScenario[] {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(scenariosKey) ?? "[]");
+    return Array.isArray(parsed) ? (parsed as SavedScenario[]).slice(-5) : [];
+  } catch {
+    localStorage.removeItem(scenariosKey);
+    return [];
   }
 }
 

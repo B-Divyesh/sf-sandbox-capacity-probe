@@ -5,7 +5,7 @@ fn runtime_probe_smoke_test() {
     let Some(runtime) = std::env::var("SCP_RUNTIME_TEST").ok() else {
         return;
     };
-    let binary = env!("CARGO_BIN_EXE_scp");
+    let binary = env!("CARGO_BIN_EXE_capacity-probe");
     let output = Command::new(binary)
         .args([
             "probe",
@@ -29,7 +29,7 @@ fn runtime_probe_smoke_test() {
             "60000",
         ])
         .output()
-        .expect("run scp");
+        .expect("run capacity-probe");
     assert!(output.status.success());
     assert!(
         output.status.success(),
