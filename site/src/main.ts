@@ -4,8 +4,11 @@ import { calculateScenario, csvForScenarios, probeCommand, type ScenarioInput } 
 const slug = "sandbox-capacity-probe";
 const licenseKey = `sb_license:${slug}`;
 const verdictKey = `sb_license_verdict:${slug}`;
+const licenseAttemptKey = `sb_license_verify_attempt:${slug}`;
 const scenariosKey = `sb_scenarios:${slug}`;
+const demoKey = `demo:${slug}:scenario`;
 const billingBase = "https://api.sociobot.in/api/v1";
+const demoScenario: ScenarioInput = { containers: 24, ports: 4, mounts: 2, baselineMs: 240, budgetMs: 1500 };
 
 const $ = <T extends HTMLElement>(selector: string): T => {
   const element = document.querySelector<T>(selector);
@@ -29,10 +32,44 @@ const readInput = (): ScenarioInput => ({
   budgetMs: Number(inputs.budgetMs.value)
 });
 
+const demoMode = new URL(window.location.href).searchParams.get("demo") === "1";
 let current = calculateScenario(readInput());
 let unlocked = false;
 
+function writeInput(input: ScenarioInput): void {
+  inputs.containers.value = String(input.containers);
+  inputs.ports.value = String(input.ports);
+  inputs.mounts.value = String(input.mounts);
+  inputs.baselineMs.value = String(input.baselineMs);
+  inputs.budgetMs.value = String(input.budgetMs);
+}
+
+function inputError(): string | null {
+  const fields: Array<[HTMLInputElement, string, number, number]> = [
+    [inputs.baselineMs, "Baseline startup", 1, 60_000],
+    [inputs.budgetMs, "p95 budget", 50, 60_000]
+  ];
+  for (const [field, label, minimum, maximum] of fields) {
+    const value = Number(field.value);
+    if (!field.value || !Number.isFinite(value) || value < minimum || value > maximum) {
+      field.setAttribute("aria-invalid", "true");
+      return `${label} must be between ${minimum.toLocaleString()} and ${maximum.toLocaleString()} ms. The last valid estimate remains shown.`;
+    }
+    field.removeAttribute("aria-invalid");
+  }
+  return null;
+}
+
 function renderPlanner(): void {
+  const error = inputError();
+  const errorElement = $("#planner-error");
+  if (error) {
+    errorElement.textContent = error;
+    errorElement.hidden = false;
+    return;
+  }
+  errorElement.textContent = "";
+  errorElement.hidden = true;
   const input = readInput();
   current = calculateScenario(input);
   $("#container-value").textContent = String(input.containers);
@@ -48,7 +85,36 @@ function renderPlanner(): void {
   $("#generated-command").textContent = probeCommand(input);
 }
 
-for (const input of Object.values(inputs)) input.addEventListener("input", renderPlanner);
+for (const input of Object.values(inputs)) {
+  input.addEventListener("input", () => {
+    if (demoMode) localStorage.setItem(demoKey, JSON.stringify(readInput()));
+    renderPlanner();
+  });
+}
+
+$("#planner-form").addEventListener("submit", (event) => event.preventDefault());
+
+function initDemo(): void {
+  if (!demoMode) return;
+  document.title = "Demo — Sandbox Capacity Probe";
+  $("#demo-banner").hidden = false;
+  let saved: ScenarioInput | null = null;
+  try {
+    const value = localStorage.getItem(demoKey);
+    saved = value ? (JSON.parse(value) as ScenarioInput) : null;
+  } catch {
+    saved = null;
+  }
+  writeInput(saved ?? demoScenario);
+  localStorage.setItem(demoKey, JSON.stringify(readInput()));
+  $("#reset-demo").addEventListener("click", () => {
+    writeInput(demoScenario);
+    localStorage.setItem(demoKey, JSON.stringify(demoScenario));
+    renderPlanner();
+    $("#planner-summary").textContent = "Demo reset to the bundled sample scenario.";
+  });
+  $("#start-real").addEventListener("click", () => localStorage.removeItem(demoKey));
+}
 
 $("#copy-command").addEventListener("click", async () => {
   const button = $("#copy-command") as HTMLButtonElement;
@@ -81,11 +147,23 @@ function showLicenseState(valid: boolean, message: string): void {
 }
 
 async function verifyLicense(token: string): Promise<void> {
+  const lastAttempt = Number(localStorage.getItem(licenseAttemptKey) ?? "0");
+  const retryAfterMs = 60_000 - (Date.now() - lastAttempt);
+  if (retryAfterMs > 0) {
+    showLicenseState(false, `Too many verification attempts from this browser. Try again in ${Math.ceil(retryAfterMs / 1000)} seconds.`);
+    return;
+  }
+  localStorage.setItem(licenseAttemptKey, String(Date.now()));
   try {
     const response = await fetch(
       `${billingBase}/products/${slug}/verify?license=${encodeURIComponent(token)}`,
       { headers: { Accept: "application/json" } }
     );
+    if (response.status === 429) {
+      const seconds = response.headers.get("Retry-After") ?? "60";
+      showLicenseState(false, `License verification is rate limited. Try again after ${seconds} seconds.`);
+      return;
+    }
     if (!response.ok) throw new Error(`verification returned ${response.status}`);
     const verdict = (await response.json()) as { valid: boolean; reason: string; expires_at?: string };
     localStorage.setItem(verdictKey, JSON.stringify({ ...verdict, checked_at: Date.now() }));
@@ -164,9 +242,14 @@ function updateConnection(): void {
 window.addEventListener("online", updateConnection);
 window.addEventListener("offline", updateConnection);
 
+initDemo();
 renderPlanner();
-renderSaved();
-initLicense();
+if (!demoMode) {
+  renderSaved();
+  initLicense();
+} else {
+  $("#license-status").textContent = "Demo mode keeps sample data separate. Start for real to restore a license.";
+}
 updateConnection();
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {

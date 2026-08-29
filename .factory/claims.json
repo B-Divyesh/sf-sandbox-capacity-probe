@@ -1,0 +1,37 @@
+[
+  {
+    "id": "demo-isolated",
+    "claim": "Try sample data without saving it to your planner.",
+    "where": "landing primary action and demo banner",
+    "test": "npx playwright test --grep '@claim:demo-isolated'",
+    "sandbox": "fresh browser context at /?demo=1; assert the demo banner, bundled scenario, and demo-only storage namespace"
+  },
+  {
+    "id": "local-planner",
+    "claim": "Planner runs locally.",
+    "where": "landing facts and planner",
+    "test": "npx playwright test --grep '@claim:local-planner'",
+    "sandbox": "fresh browser context at /?demo=1; change a scenario and assert no cross-origin request is made"
+  },
+  {
+    "id": "no-telemetry",
+    "claim": "No telemetry.",
+    "where": "landing facts, README, and privacy page",
+    "test": "npx playwright test --grep '@claim:no-telemetry'",
+    "sandbox": "fresh browser context at /?demo=1; record all requests during planner use and assert only the product origin is contacted"
+  },
+  {
+    "id": "csv-export",
+    "claim": "Exports this scenario as CSV.",
+    "where": "planner export button",
+    "test": "npx playwright test --grep '@claim:csv-export'",
+    "sandbox": "fresh browser context at /?demo=1; download CSV and assert its header and sample row"
+  },
+  {
+    "id": "offline-reload",
+    "claim": "Read the planner offline after the first visit.",
+    "where": "privacy page",
+    "test": "npx playwright test --grep '@claim:offline-reload'",
+    "sandbox": "fresh browser context; install the service worker online, reload under offline mode, and assert the planner remains visible"
+  }
+]

@@ -19,12 +19,17 @@ use std::time::{SystemTime, UNIX_EPOCH};
     long_about = "Sandbox Capacity Probe runs a bounded synthetic container sweep on an explicitly confirmed non-production runtime, then reports startup percentiles, published-port pressure, firewall rule evidence, and a capacity envelope. No telemetry; results stay local."
 )]
 struct Cli {
+    /// Write and render the bundled sample report without contacting a container runtime
+    #[arg(long, global = true)]
+    demo: bool,
     #[command(subcommand)]
-    command: Command,
+    command: Option<Command>,
 }
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Run the bundled sample and print where its report was written
+    Demo,
     /// Run a bounded synthetic capacity sweep
     Probe(ProbeArgs),
     /// Render a saved JSON report for a human review
@@ -118,9 +123,13 @@ fn main() -> ExitCode {
 }
 
 fn execute(cli: Cli) -> Result<u8, String> {
+    if cli.demo {
+        return demo();
+    }
     match cli.command {
-        Command::Probe(args) => probe(args),
-        Command::Explain { report } => {
+        Some(Command::Demo) => demo(),
+        Some(Command::Probe(args)) => probe(args),
+        Some(Command::Explain { report }) => {
             let report = read_report(&report)?;
             print_report(&report);
             Ok(if report.envelope.status == "exceeded" {
@@ -129,11 +138,11 @@ fn execute(cli: Cli) -> Result<u8, String> {
                 0
             })
         }
-        Command::Compare {
+        Some(Command::Compare {
             predicted,
             observed,
             json,
-        } => {
+        }) => {
             let predicted = read_report(&predicted)?;
             let observed = read_report(&observed)?;
             let comparison = compare_reports(&predicted, &observed);
@@ -173,7 +182,27 @@ fn execute(cli: Cli) -> Result<u8, String> {
                 },
             )
         }
+        None => Err(
+            "choose a command such as `scp probe`, or run `scp demo` for the bundled sample".into(),
+        ),
     }
+}
+
+fn demo() -> Result<u8, String> {
+    let report: Report = serde_json::from_str(include_str!("../examples/demo-capacity.json"))
+        .map_err(|error| format!("read bundled demo report: {error}"))?;
+    let directory = std::env::temp_dir().join(format!(
+        "sandbox-capacity-probe-demo-{}",
+        std::process::id()
+    ));
+    fs::create_dir_all(&directory)
+        .map_err(|error| format!("create demo directory {}: {error}", directory.display()))?;
+    let output = directory.join("capacity-demo.json");
+    write_report(&output, &report)?;
+    println!("Demo — bundled sample data; no container runtime was contacted.");
+    print_report(&report);
+    println!("\nSample report written to {}", output.display());
+    Ok(0)
 }
 
 fn probe(args: ProbeArgs) -> Result<u8, String> {
@@ -404,6 +433,12 @@ mod tests {
             "--dry-run",
         ])
         .unwrap();
+        assert_eq!(execute(cli), Ok(0));
+    }
+
+    #[test]
+    fn bundled_demo_parses_and_runs_without_a_runtime() {
+        let cli = Cli::try_parse_from(["scp", "--demo"]).unwrap();
         assert_eq!(execute(cli), Ok(0));
     }
 

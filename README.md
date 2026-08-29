@@ -15,6 +15,19 @@ scp --help
 
 The factory can publish the crate with `cargo package --manifest-path cli/Cargo.toml`; registry credentials are intentionally not included.
 
+## Try the bundled demo
+
+Run a realistic sample without Docker, Podman, or a network connection:
+
+```sh
+scp demo
+# or: scp --demo
+```
+
+The command writes `capacity-demo.json` in a process-specific temporary directory
+and prints the exact path. It never measures your host. Use the website demo at
+`https://sandbox-capacity-probe.sociobot.in/?demo=1` for the same safe first look.
+
 ## Usage
 
 First inspect the plan without changing the runtime:
@@ -72,6 +85,10 @@ npm run build
 ```
 
 `npm run build` compiles/tests the CLI and builds the site to `dist/site/`. The production entry point is `dist/site/index.html`.
+The deployed static-site configuration sends a restrictive Content Security Policy,
+serves a styled 404 page, and caches the offline shell. The demo mode stores only
+`demo:sandbox-capacity-probe:scenario` in local storage; **Start for real** removes
+that sample key.
 
 ## Development and verification
 
@@ -85,6 +102,13 @@ npm run build
 
 Docker/Podman integration tests are opt-in because they create containers: `SCP_RUNTIME_TEST=docker cargo test --manifest-path cli/Cargo.toml --test runtime`.
 
+Every visitor-facing website claim is listed in `.factory/claims.json`. Run its
+exact clean-demo checks after `npm run build:site`, for example:
+
+```sh
+npx playwright test --grep '@claim:demo-isolated'
+```
+
 ## Privacy and licensing
 
-Probe results stay on your machine. The website planner uses local storage only for a purchased license and saved Pro scenarios. See the site’s `/privacy/` and `/terms/` pages. Source code is MIT licensed; the optional Planner Pro browser features are a one-time license unlock sold by Sociobot, the merchant of record.
+Probe results stay on your machine. The website planner uses local storage only for demo data, a purchased license, and saved Pro scenarios. Manual license verification is limited to one attempt per browser minute; automatic checks occur at most once per day. See the site’s `/privacy/` and `/terms/` pages. Source code is MIT licensed; the optional Planner Pro browser features are a one-time license unlock sold by Sociobot, the merchant of record.

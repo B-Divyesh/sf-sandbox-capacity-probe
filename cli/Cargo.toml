@@ -9,6 +9,7 @@ repository = "https://github.com/B-Divyesh/sf-sandbox-capacity-probe"
 homepage = "https://sandbox-capacity-probe.sociobot.in"
 keywords = ["docker", "podman", "capacity", "benchmark", "cli"]
 categories = ["command-line-utilities", "development-tools"]
+include = ["src/**", "examples/**", "tests/**", "Cargo.toml", "../README.md", "../LICENSE"]
 
 [[bin]]
 name = "scp"

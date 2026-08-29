@@ -4,9 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f2f0e7" />
-    <meta name="description" content="Measure Docker and Podman sandbox startup latency, port-rule pressure, mounts, and the safe capacity envelope before production." />
-    <title>Sandbox Capacity Probe — Know the safe operating envelope</title>
+    <meta name="description" content="Measure a safe Docker or Podman container scale before rollout, with a bounded local capacity probe and planner." />
+    <link rel="canonical" href="https://sandbox-capacity-probe.sociobot.in/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Sandbox Capacity Probe — Measure container capacity" />
+    <meta property="og:description" content="Measure a safe Docker or Podman container scale before rollout." />
+    <meta property="og:url" content="https://sandbox-capacity-probe.sociobot.in/" />
+    <meta property="og:image" content="https://sandbox-capacity-probe.sociobot.in/social-card.webp" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Sandbox Capacity Probe — Measure container capacity" />
+    <meta name="twitter:description" content="Measure a safe Docker or Podman container scale before rollout." />
+    <meta name="twitter:image" content="https://sandbox-capacity-probe.sociobot.in/social-card.webp" />
+    <title>Sandbox Capacity Probe — Measure container capacity</title>
     <link rel="icon" href="/mark.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <script type="module" src="/src/main.ts"></script>
   </head>
   <body>
@@ -18,12 +29,21 @@
           <span>Sandbox Capacity Probe</span>
         </a>
         <div class="nav-links">
+          <a href="/?demo=1#planner">Demo</a>
           <a href="#method">Method</a>
           <a href="#planner">Planner</a>
+          <a href="/privacy/">Privacy</a>
           <a class="button survey" href="https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/checkout">Get Planner Pro · $39</a>
         </div>
       </nav>
     </header>
+
+    <section class="demo-banner" id="demo-banner" aria-label="Demo controls" hidden>
+      <div class="shell demo-banner-inner">
+        <strong>Demo — sample data, nothing is saved</strong>
+        <div><button class="text-button" id="reset-demo" type="button">Reset demo</button><a href="/" id="start-real">Start for real</a></div>
+      </div>
+    </section>
 
     <main id="main" tabindex="-1">
       <section class="hero" aria-labelledby="hero-title">
@@ -33,15 +53,16 @@
         <div class="hero-grid shell">
           <div class="hero-copy">
             <p class="eyebrow">Preflight survey / Docker + Podman</p>
-            <h1 id="hero-title">Find the edge before your fleet does.</h1>
-            <p class="lede">Measure startup p95, published-port pressure, mounts, and headroom on the host you actually plan to use—then validate the prediction with a second controlled run.</p>
+            <h1 id="hero-title">Measure container capacity before rollout.</h1>
+            <p class="lede">For teams running isolated agent or customer containers, measure a safe Docker or Podman scale before the real rollout.</p>
             <div class="hero-actions">
-              <a class="button survey" href="#run">Run your first survey</a>
+              <a class="button survey" href="/?demo=1#planner">Try it with sample data</a>
               <a class="button secondary" href="#planner">Map a scenario</a>
             </div>
+            <p class="action-note">The sample opens a local planner and writes only demo storage.</p>
             <ul class="hero-note" aria-label="Product guarantees">
-              <li>Bounded by default</li>
-              <li>Local results</li>
+              <li>Sample data stays separate</li>
+              <li>Planner runs locally</li>
               <li>No telemetry</li>
             </ul>
           </div>
@@ -108,17 +129,18 @@ Sandbox capacity envelope
             <p class="section-intro">This local planner is a transparent planning estimate, not a benchmark. Use the generated command to replace it with evidence from your runtime.</p>
           </div>
           <div class="planner-wrap">
-            <form class="planner-controls" aria-label="Capacity scenario inputs" onsubmit="return false">
+            <form class="planner-controls" id="planner-form" aria-label="Capacity scenario inputs">
               <div class="field"><div class="field-head"><label for="containers">Concurrent containers</label><output id="container-value" for="containers">12</output></div><input id="containers" type="range" min="1" max="64" value="12" /></div>
               <div class="field"><div class="field-head"><label for="ports">Ports per container</label><output id="port-value" for="ports">2</output></div><input id="ports" type="range" min="0" max="16" value="2" /></div>
               <div class="field"><div class="field-head"><label for="mounts">Mounts per container</label><output id="mount-value" for="mounts">1</output></div><input id="mounts" type="range" min="0" max="16" value="1" /></div>
               <div class="two-fields">
-                <div class="field"><label for="baseline">Baseline startup (ms)</label><input id="baseline" type="number" min="1" max="60000" value="180" /></div>
-                <div class="field"><label for="budget">p95 budget (ms)</label><input id="budget" type="number" min="50" max="60000" value="1500" /></div>
+                <div class="field"><label for="baseline">Baseline startup (ms)</label><input id="baseline" type="number" min="1" max="60000" value="180" required aria-describedby="planner-error" /></div>
+                <div class="field"><label for="budget">p95 budget (ms)</label><input id="budget" type="number" min="50" max="60000" value="1500" required aria-describedby="planner-error" /></div>
               </div>
             </form>
             <div class="planner-results">
               <div class="result-main">
+                <p class="planner-error" id="planner-error" role="alert" hidden></p>
                 <p class="map-label">Estimated p95 / model only</p>
                 <p class="result-number" id="prediction">330 ms</p>
                 <span class="status" id="status">comfortable</span>
@@ -150,7 +172,7 @@ Sandbox capacity envelope
             <a class="button survey" href="https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/checkout">Buy Planner Pro</a>
             <p class="estimate-note">Sociobot/Dodo is the merchant of record. Refunds are handled there and revoke the license automatically. See <a href="/privacy/">privacy</a> and <a href="/terms/">terms</a>.</p>
           </div>
-          <aside class="license-panel" aria-label="License and saved scenarios">
+          <div class="license-panel" aria-label="License and saved scenarios">
             <h3>License station</h3>
             <p class="license-status" id="license-status" aria-live="polite">Free planner active. No account required.</p>
             <form class="license-form" id="license-form">
@@ -164,7 +186,7 @@ Sandbox capacity envelope
               <h3>Saved contours</h3>
               <ul id="saved-scenarios"><li>No saved scenarios yet. Adjust the map above, then save a contour.</li></ul>
             </div>
-          </aside>
+          </div>
         </div>
       </section>
 
@@ -173,8 +195,8 @@ Sandbox capacity envelope
 
     <footer class="site-footer">
       <div class="shell footer-grid">
-        <div><a class="brand" href="/"><img class="brand-mark" src="/mark.svg" alt="" width="36" height="36" /><span>Sandbox Capacity Probe</span></a><p>A small instrument for finding the safe edge of a container fleet. Built without telemetry.</p></div>
-        <div class="footer-links"><strong>Product</strong><a href="#method">Method</a><a href="#planner">Planner</a><a href="https://github.com/B-Divyesh/sf-sandbox-capacity-probe">Source</a></div>
+        <div><a class="brand" href="/"><img class="brand-mark" src="/mark.svg" alt="" width="36" height="36" /><span>Sandbox Capacity Probe</span></a><p>A local tool for measuring safe container capacity. No telemetry.</p><p>Built by Param Factory</p></div>
+        <div class="footer-links"><strong>Product</strong><a href="/?demo=1#planner">Demo</a><a href="#method">Method</a><a href="#planner">Planner</a><a href="https://github.com/B-Divyesh/sf-sandbox-capacity-probe">Source</a></div>
         <div class="footer-links"><strong>Legal</strong><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>MIT · 0.1.0</span></div>
       </div>
     </footer>

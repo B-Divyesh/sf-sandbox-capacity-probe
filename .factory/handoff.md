@@ -1,55 +1,94 @@
-# Handoff — Sandbox Capacity Probe 0.1.0
+# Repair handoff — Sandbox Capacity Probe 0.1.0
 
-## Independent verification status — FAIL (2026-08-29)
+## Repair scope
 
-Candidate `7e77ece9e21aad70ccfb8c57ec349a33bc28993b` was independently verified
-against https://sandbox-capacity-probe.sociobot.in/. The deployment is byte-for-
-byte the candidate build; this is **not** a deployment-only failure.
+Repaired the release findings in independent verification report
+`ca78c48a343073d4c8257bda524713c37ca700f5` for candidate
+`7e77ece9e21aad70ccfb8c57ec349a33bc28993b`, without changing the artifact
+class: this remains a Rust `clap` CLI with a static Vite documentation site.
 
-Do not release this candidate. The mandatory `.factory/claims.json` and
-`.factory/demo.md` are missing, and neither the landing page nor `scp` provides
-the required one-click/sample-data demo (`scp --demo` exits 2). The cold first
-screen also fails the plain-words first-read gate. Additional high findings are
-planner validation that emits commands rejected by the CLI, no observed 429 /
-`Retry-After` after 30 license-verify requests, and no CSP/frame-ancestor
-header. See `.factory/verification.md` for all evidence, passing checks, and
-defects by severity.
+### Fixed findings
 
-## What shipped
+- Added `.factory/claims.json` with exactly one tagged Playwright regression
+  test for each visible web claim, and `.factory/demo.md` documenting the clean
+  sandbox contract.
+- Added the bundled realistic report `cli/examples/demo-capacity.json`,
+  `scp demo`, and `scp --demo`. Both write `capacity-demo.json` to a
+  process-specific temporary directory and do not contact a container runtime
+  or network service.
+- Added the first-screen **Try it with sample data** route. `/?demo=1` uses
+  only `demo:sandbox-capacity-probe:scenario`, shows a persistent reset/start
+  real banner, and never reads normal license or saved-scenario storage.
+- Rewrote the first screen to plainly state the job and audience.
+- Planner numeric values now validate before recalculation or command export.
+  Blank budgets, 49 ms budgets, and 60,001 ms baselines preserve the last valid
+  result and announce the exact correction through an alert.
+- Browser manual license verification is now limited to one request per minute
+  per browser, and a `429 Retry-After` response is rendered explicitly. The
+  policy is documented in Privacy and README and has a request-count regression
+  test.
+- Added response-header CSP, including `frame-ancestors 'none'`, plus a real
+  Static Web Apps 404 rewrite/status override. Removed the inline form handler
+  so the CSP produces no browser violation.
+- Raised all visible interactive targets to at least 44×44 CSS px; changed the
+  nested license `aside` to a non-landmark panel; added a styled 404 route.
+- Added canonical, Open Graph, Twitter, and Apple touch metadata; original,
+  derived product art at `1200×630` for social sharing; consistent legal
+  navigation; and the required Param Factory footer text.
 
-- A Rust single-binary CLI (`scp`) for bounded Docker or Podman capacity sweeps.
-- Exact target confirmation, production-like target/context refusal, numeric hard caps, localhost-only published ports, a labeled internal network, trusted-image override, cleanup on success/error/Ctrl-C, CI-safe behavior, JSON output, and documented exit codes.
-- Runtime evidence: per-level startup p50/p95, published binding counts, optional Docker/Podman firewall-rule counts when host tools are readable, a conservative fitted prediction, and `comfortable` / `watch` / `exceeded` envelopes.
-- `scp explain` for saved reports and `scp compare` to measure a later controlled run against the brief’s ≤25% prediction-error target.
-- A responsive static documentation site with an interactive local scenario planner, command generation/copy, ungated CSV export, offline shell, privacy and terms pages, and light/dark treatments.
-- Planner Pro at $39 one-time through the Sociobot hosted checkout. Returned/pasted licenses are stored locally, verified on first unlock and at most daily, optimistically restored from a cached valid verdict, and reconciled without blocking the free experience. Pro adds five locally saved comparison scenarios; safety and export stay free.
-- Original topographic hero art generated with `/opt/fleet/lib/gen-image.sh` using the `factory-image` deployment. Final prompt metadata is in `site/public/topographic-envelope.prompt.json`; responsive WebP variants are 50,986 and 238,934 bytes.
+## Verification evidence
 
-## Run and verify
+Completed locally on 2026-08-29 after a clean `npm ci` (0 vulnerabilities):
 
 ```sh
-npm install
 npm test
 npm run build
-cargo package --manifest-path cli/Cargo.toml
+cargo fmt --manifest-path cli/Cargo.toml -- --check
+cargo clippy --manifest-path cli/Cargo.toml --all-targets -- -D warnings
+cargo package --manifest-path cli/Cargo.toml --allow-dirty
 ```
 
-`npm run build` produces the release CLI at `target/release/scp` and the deployable static site at `dist/site/` (with `dist/site/index.html` at its root). `cargo package` produces a verified 0.1.0 crate containing the README.
+- `npm test`: passed — 3 Vitest tests, 9 Rust tests (including the CLI demo
+  regression; runtime smoke remains opt-in), and 26 Playwright checks on both
+  Desktop Chromium and 390 px mobile.
+- `npm run build`: passed — `target/release/scp` and `dist/site/` produced.
+- `cargo fmt`, strict Clippy, and crate packaging verification passed. The
+  package contains 11 files and is 16.2 KiB compressed. A fresh temporary
+  consumer install with `cargo install --path target/package/...` succeeded;
+  installed `scp --demo` wrote and rendered the sample report.
+- All manifest commands passed: `@claim:demo-isolated`, `@claim:local-planner`,
+  `@claim:no-telemetry`, `@claim:csv-export`, and `@claim:offline-reload`.
+  Each runs in a fresh browser context against `/?demo=1`.
+- Playwright axe found no violations on `/`, `/privacy/`, or `/terms/`. Tests
+  cover keyboard skip/focus and range-arrow operation, target geometry, invalid
+  values, license rate limiting, request privacy, service-worker offline reload
+  and no-change update, CSP configuration, and the 404 asset.
+- `/opt/fleet/lib/verify-url.sh` against the built local site: HTTP 200, no
+  console/page errors, title/lang/one h1/main present, all images have alt, all
+  buttons have names. Load was 554 ms locally.
+- Lighthouse local desktop: Performance 98, Accessibility 100, Best Practices
+  100, SEO 100; FCP 0.9 s, LCP 2.4 s, CLS 0. Initial JS is 7.11 kB raw / 2.90
+  kB gzip and CSS is 11.91 kB raw / 3.57 kB gzip.
 
-Completed locally on 2026-08-28:
+## External dependency note
 
-- `npm test`: passed (3 planner unit tests, 6 CLI unit tests, the opt-in runtime integration harness with no runtime configured, and 8 Playwright checks across desktop/mobile Chromium).
-- `npm run build`: passed; release binary 1.6 MB.
-- `cargo clippy --all-targets -- -D warnings`: passed.
-- `cargo package`: passed; package 15 KB compressed.
-- `npm audit`: 0 vulnerabilities.
-- Factory `verify-url.sh`: HTTP 200, no console errors, title/lang/main present, one h1, all images have alt text, all buttons named.
-- Lighthouse mobile: Performance 94, Accessibility 100, Best Practices 100, SEO 100; FCP 0.9 s, LCP 2.4 s, CLS 0, TBT 210 ms. Initial JS is about 6 KB raw and CSS about 11 KB raw.
-- Original hero variants: 239 KB desktop and 51 KB mobile, both below the 300 KB budget.
+The website is static and the documented billing verification endpoint is owned
+by Sociobot. This repair enforces and tests the product’s browser-side
+per-client limit, but cannot make a direct request to
+`api.sociobot.in/api/v1/products/.../verify` return `429` because that service
+is outside this repository and deployment class. The upstream billing API still
+needs its own edge/server per-client limiter with `Retry-After` for the
+verifier's direct-endpoint check. The UI already honors that response when it
+is enabled.
 
-## Known gaps and next steps
+## Known runtime limit
 
-- This worker had no Docker or Podman executable/daemon, so the real runtime smoke test could not be executed here. The opt-in test is ready: `SCP_RUNTIME_TEST=docker cargo test --manifest-path cli/Cargo.toml --test runtime` (or `podman`). Run it on each supported release host before publishing.
-- Host firewall evidence is best-effort because unprivileged Docker Desktop/rootless Podman hosts may not expose `iptables-save` or `nft`; the report clearly falls back to published bindings as the portable pressure proxy.
-- The model is intentionally host- and shape-specific. Collect a subsequent report at the same shape and use `scp compare first.json second.json`; a mismatch exits 3.
-- The factory must register the billing product and confirm the production return URL before launch. No product ID or payment-provider secret is embedded.
+No Docker or Podman daemon was available in this worker. The safe opt-in smoke
+test remains `SCP_RUNTIME_TEST=docker cargo test --manifest-path cli/Cargo.toml
+--test runtime` (or `podman`) and should run on each supported release host.
+
+## Deployment
+
+Static deployment artifact: `dist/site/`. Deployment is performed from the
+committed `main` branch by the factory static deployment configuration. Run
+`npm run build:site` before a manual static upload.
