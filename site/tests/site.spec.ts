@@ -169,6 +169,8 @@ test("legal pages are available", async ({ page }) => {
 test("dark treatment has no serious accessibility violations", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
   await page.goto("/?demo=1");
+  await page.keyboard.press("Tab");
+  await expect(page.locator(".skip-link")).toBeFocused();
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
   expect(await page.locator(".hero-image img").evaluate((image) => getComputedStyle(image).animationDuration)).toBe("1e-05s");

@@ -44,8 +44,8 @@ button, .button { min-width: 44px; min-height: 44px; }
   top: 8px;
   left: 8px;
   padding: 10px 14px;
-  color: white;
-  background: var(--ink);
+  color: #fff;
+  background: #17251f;
   transform: translateY(-150%);
 }
 .skip-link:focus { transform: translateY(0); }
