@@ -76,15 +76,30 @@ passing behavior remain intact.
 
 ## Deployment and live checks
 
-Pending the repair commit. Deploy with:
+Repair commit `36d21df` was pushed to `origin/main` and deployed with the
+factory static deployment script. Azure deployment
+`5a04aeff-4f7e-4062-a78d-365cb8939eb3` succeeded; the existing Central US app
+and custom domain both reported ready, and HTTPS returned 200.
 
-```sh
-/opt/fleet/lib/deploy-static.sh sandbox-capacity-probe dist/site
-```
-
-After upload, run `/opt/fleet/lib/verify-url.sh`, compare live artifact hashes,
-and check CSP/cache response policy and live product identity. Append the exact
-results here before final handoff.
+- SHA-256 matched for all 17 publicly served files in `dist/site`. The only
+  non-public build file is `staticwebapp.config.json`, which the platform
+  consumes and correctly returns as 404.
+- `/opt/fleet/lib/verify-url.sh` passed live in 728 ms with the correct title,
+  `lang=en`, one h1, main landmark, complete image alt text, named buttons, and
+  zero console/page errors.
+- Root responses include HSTS, `nosniff`, Referrer-Policy, Permissions-Policy,
+  and response-header CSP with `frame-ancestors 'none'`. Hashed assets are
+  immutable; stable hero assets now revalidate with a 30-second max age.
+- An unknown route returned the designed 404 body with HTTP 404. The live
+  billing product identity returned HTTP 200 with `{valid:false,
+  reason:"invalid"}` for the repair test token.
+- A fresh 390×844 DPR-2 browser loaded the 50,986-byte mobile hero, had zero
+  horizontal overflow, console errors, page errors, cross-origin demo requests,
+  or serious/critical axe findings. Fractional recovery, the v3 cache, service
+  worker update, and offline reload all passed live.
+- Three live Lighthouse mobile runs scored **100/100/100** Performance and
+  **100/100/100** Accessibility, Best Practices, and SEO. LCP was 1,065–1,080
+  ms, TBT 0–23 ms, CLS 0.059, and transfer was 63,546–63,609 bytes.
 
 ## Known environment gap
 
