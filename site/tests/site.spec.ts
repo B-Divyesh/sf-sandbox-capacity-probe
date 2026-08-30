@@ -117,9 +117,9 @@ test("@claim:offline-reload keeps the planner available after the first visit", 
     await page.goto("/?demo=1");
     await page.evaluate(() => navigator.serviceWorker.ready);
     await page.reload();
-    expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v6");
+    expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v7");
     await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())?.update(); });
-    expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v6");
+    expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v7");
     await context.setOffline(true);
     await page.reload();
     await expect(page.locator("#planner-title")).toBeVisible();
