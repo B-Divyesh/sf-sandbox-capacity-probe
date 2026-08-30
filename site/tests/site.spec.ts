@@ -142,18 +142,24 @@ test("@claim:csv-export downloads the current scenario as CSV", async ({ page })
   expect(csv).toContain("24,4,2,240,1500");
 });
 
-test("@claim:offline-reload keeps the planner available after the first visit", async ({ page, context }) => {
-  await page.goto("/?demo=1");
-  await page.evaluate(() => navigator.serviceWorker.ready);
-  await page.reload();
-  expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v6");
-  await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())?.update(); });
-  expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v6");
-  await context.setOffline(true);
-  await page.reload();
-  await expect(page.locator("#planner-title")).toBeVisible();
-  await expect(page.locator("#demo-banner")).toBeVisible();
-  await context.setOffline(false);
+test("@claim:offline-reload keeps the planner available after the first visit", async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  try {
+    await page.goto("/?demo=1");
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.reload();
+    expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v6");
+    await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())?.update(); });
+    expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v6");
+    await context.setOffline(true);
+    await page.reload();
+    await expect(page.locator("#planner-title")).toBeVisible();
+    await expect(page.locator("#demo-banner")).toBeVisible();
+  } finally {
+    await context.setOffline(false);
+    await context.close();
+  }
 });
 
 test("deployment policy has a response-header CSP and a real 404 override", () => {
