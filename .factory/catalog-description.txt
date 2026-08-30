@@ -1,1 +1,1 @@
-Check safe Docker or Podman container capacity before rollout with a bounded local probe.
+Measure safe Docker or Podman container capacity before rollout with a bounded local probe.

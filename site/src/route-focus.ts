@@ -33,8 +33,32 @@ function focusAndAnnounceRoute(): void {
   statusRegion().textContent = `${document.title}. ${heading.textContent?.trim() ?? "Page loaded"}.`;
 }
 
+function initNavigation(): void {
+  const nav = document.querySelector<HTMLElement>(".nav");
+  const toggle = document.querySelector<HTMLButtonElement>("#nav-toggle");
+  if (!nav || !toggle) return;
+  const close = (): void => {
+    nav.removeAttribute("data-menu-open");
+    toggle.setAttribute("aria-expanded", "false");
+  };
+  toggle.addEventListener("click", () => {
+    const open = nav.getAttribute("data-menu-open") !== "true";
+    if (open) nav.setAttribute("data-menu-open", "true");
+    else nav.removeAttribute("data-menu-open");
+    toggle.setAttribute("aria-expanded", String(open));
+  });
+  nav.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      close();
+      toggle.focus();
+    }
+  });
+  nav.querySelectorAll<HTMLAnchorElement>(".nav-links a").forEach((link) => link.addEventListener("click", close));
+}
+
 export function initRouteFocus(force = false): void {
   statusRegion();
+  initNavigation();
   document.addEventListener("click", (event) => {
     const link = (event.target as Element | null)?.closest<HTMLAnchorElement>("a[href]");
     if (!link || link.target === "_blank" || link.hasAttribute("download")) return;

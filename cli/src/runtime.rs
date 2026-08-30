@@ -93,7 +93,15 @@ impl Runtime {
         fs::create_dir_all(&temp_root).map_err(|e| format!("create temporary mount root: {e}"))?;
         let baseline_bindings = self.count_published_bindings().unwrap_or(0);
         let (baseline_rules, rule_method) = network_rule_count();
-        self.create_network(&network)?;
+        if let Err(error) = self.create_network(&network) {
+            if let Err(cleanup_error) = fs::remove_dir_all(&temp_root) {
+                return Err(format!(
+                    "{error}; also remove temporary mounts {}: {cleanup_error}",
+                    temp_root.display()
+                ));
+            }
+            return Err(error);
+        }
 
         let mut session = Session {
             runtime: self,

@@ -28,15 +28,13 @@
           <img class="brand-mark" src="/mark.svg" alt="" width="36" height="36" />
           <span>Sandbox Capacity Probe</span>
         </a>
-        <details class="nav-menu">
-          <summary>Menu</summary>
-          <div class="nav-links">
-            <a href="/?demo=1#cli-demo">Demo</a>
-            <a href="#method">Method</a>
-            <a href="#planner">Planner</a>
-            <a href="/privacy/">Privacy</a>
-          </div>
-        </details>
+        <button class="nav-toggle" id="nav-toggle" type="button" aria-controls="primary-links" aria-expanded="false">Menu</button>
+        <div class="nav-links" id="primary-links">
+          <a href="/?demo=1#cli-demo">Demo</a>
+          <a href="#method">Method</a>
+          <a href="#planner">Planner</a>
+          <a href="/privacy/">Privacy</a>
+        </div>
       </nav>
     </header>
 
@@ -62,10 +60,10 @@
               <a class="button secondary" href="#planner">Open the capacity planner</a>
             </div>
             <p class="action-note">See the real CLI output and an isolated local planning scenario.</p>
-            <ul class="hero-note" aria-label="Product guarantees">
-              <li>Sample data stays separate</li>
-              <li>Planner runs locally</li>
-              <li>No telemetry</li>
+            <ul class="hero-note" aria-label="Product facts">
+              <li>No telemetry; demo stays separate</li>
+              <li>Offline after the first visit</li>
+              <li>Free planner and CSV export</li>
             </ul>
           </div>
         </div>
@@ -190,39 +188,6 @@ Sandbox capacity envelope
                 <div class="command-block"><code id="generated-command">capacity-probe probe --target staging-west --confirm staging-west --containers 12 --ports-per-container 2 --mounts 1 --samples 3 --startup-budget-ms 1500 --output capacity.json</code><button id="copy-command" type="button">Copy command</button></div>
                 <div class="planner-actions"><button class="button secondary" id="export-csv" type="button">Export CSV</button></div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section section-rule" id="pro" aria-labelledby="pro-title">
-        <div class="shell license-grid">
-          <div>
-            <p class="map-label">Planner Pro / 05</p>
-            <h2 id="pro-title">Save up to five planning scenarios</h2>
-            <p class="lede">Planner Pro saves up to five local scenarios for side-by-side review. The CLI, safety controls, JSON reports, and CSV export work without Planner Pro.</p>
-            <p class="price">$39 <small>one-time purchase</small></p>
-            <ul class="feature-list">
-              <li>Save five scenarios on this device</li>
-              <li>Compare scenarios before running probes</li>
-              <li>Keep only the five latest local scenarios</li>
-            </ul>
-            <a class="button survey" data-real-only href="https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/checkout">Buy Planner Pro for $39</a>
-            <p class="estimate-note">Sociobot hosts checkout. Read the <a href="/terms/">purchase and refund terms</a> or the <a href="/privacy/">privacy policy</a>.</p>
-          </div>
-          <div class="license-panel" aria-label="License and saved scenarios">
-            <h3>Restore a Planner Pro license</h3>
-            <p class="license-status" id="license-status" aria-live="polite">Free planner active. No account required.</p>
-            <form class="license-form" id="license-form">
-              <label for="license-token">Have a license? Paste it here</label>
-              <input id="license-token" type="text" autocomplete="off" spellcheck="false" aria-describedby="license-help" />
-              <p class="estimate-note" id="license-help">The token is stored only in this browser and verified with Sociobot.</p>
-              <button class="button secondary" type="submit">Restore Planner Pro access</button>
-            </form>
-            <div class="pro-tools" id="pro-tools" hidden>
-              <button class="button secondary" id="save-scenario" type="button">Save current scenario</button>
-              <h3>Saved scenarios</h3>
-              <ul id="saved-scenarios"><li>No saved scenarios yet. Adjust the planner above, then save this scenario.</li></ul>
             </div>
           </div>
         </div>

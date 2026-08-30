@@ -2,22 +2,15 @@ import "./styles.css";
 import {
   calculateScenario,
   csvForScenarios,
-  isSavedScenario,
   isScenarioInput,
   probeCommand,
-  type SavedScenario,
   type ScenarioInput,
   type ScenarioResult
 } from "./planner";
 import { initRouteFocus } from "./route-focus";
 
 const slug = "sandbox-capacity-probe";
-const licenseKey = `sb_license:${slug}`;
-const verdictKey = `sb_license_verdict:${slug}`;
-const licenseAttemptKey = `sb_license_verify_attempt:${slug}`;
-const scenariosKey = `sb_scenarios:${slug}`;
 const demoKey = `demo:${slug}:scenario`;
-const billingBase = "https://api.sociobot.in/api/v1";
 const demoScenario: ScenarioInput = { containers: 24, ports: 4, mounts: 2, baselineMs: 240, budgetMs: 1500 };
 
 const $ = <T extends HTMLElement>(selector: string): T => {
@@ -44,7 +37,6 @@ const readInput = (): ScenarioInput => ({
 
 const demoMode = new URL(window.location.href).searchParams.get("demo") === "1";
 let current: (ScenarioInput & ScenarioResult) | null = null;
-let unlocked = false;
 
 function writeInput(input: ScenarioInput): void {
   inputs.containers.value = String(input.containers);
@@ -75,9 +67,8 @@ function inputError(): string | null {
 }
 
 function setPlannerActions(valid: boolean): void {
-  ($<HTMLButtonElement>("#export-csv")).disabled = !valid;
-  ($<HTMLButtonElement>("#copy-command")).disabled = !valid;
-  ($<HTMLButtonElement>("#save-scenario")).disabled = !valid || !unlocked;
+  $("#export-csv").toggleAttribute("disabled", !valid);
+  $("#copy-command").toggleAttribute("disabled", !valid);
 }
 
 function clearCalculatedFields(): void {
@@ -194,143 +185,10 @@ $("#export-csv").addEventListener("click", () => {
   URL.revokeObjectURL(link.href);
 });
 
-function showLicenseState(valid: boolean, message: string): void {
-  unlocked = valid;
-  const status = $("#license-status");
-  status.textContent = message;
-  status.dataset.valid = String(valid);
-  $("#pro-tools").hidden = !valid;
-  $("#license-form").toggleAttribute("hidden", valid);
-  setPlannerActions(current !== null);
-}
-
-async function verifyLicense(token: string): Promise<void> {
-  if (demoMode) return;
-  const lastAttempt = Number(localStorage.getItem(licenseAttemptKey) ?? "0");
-  const retryAfterMs = 60_000 - (Date.now() - lastAttempt);
-  if (retryAfterMs > 0) {
-    showLicenseState(false, `Too many verification attempts from this browser. Try again in ${Math.ceil(retryAfterMs / 1000)} seconds.`);
-    return;
-  }
-  localStorage.setItem(licenseAttemptKey, String(Date.now()));
-  try {
-    const response = await fetch(
-      `${billingBase}/products/${slug}/verify?license=${encodeURIComponent(token)}`,
-      { headers: { Accept: "application/json" } }
-    );
-    if (response.status === 429) {
-      const seconds = response.headers.get("Retry-After") ?? "60";
-      showLicenseState(false, `License verification is rate limited. Try again after ${seconds} seconds.`);
-      return;
-    }
-    if (!response.ok) throw new Error(`verification returned ${response.status}`);
-    const verdict = (await response.json()) as { valid: boolean; reason: string; expires_at?: string };
-    localStorage.setItem(verdictKey, JSON.stringify({ ...verdict, checked_at: Date.now() }));
-    showLicenseState(verdict.valid, verdict.valid ? "Planner Pro is active on this device." : "License no longer active. Paste another license or purchase access.");
-  } catch {
-    const cached = parseVerdict();
-    showLicenseState(Boolean(cached?.valid), cached?.valid ? "Planner Pro is active from the last verified license. Verification is offline." : "Could not verify while offline. The free planner remains available.");
-  }
-}
-
-function parseVerdict(): { valid: boolean; checked_at: number } | null {
-  try {
-    const value = localStorage.getItem(verdictKey);
-    if (!value) return null;
-    const parsed: unknown = JSON.parse(value);
-    if (
-      typeof parsed === "object"
-      && parsed !== null
-      && typeof (parsed as Record<string, unknown>).valid === "boolean"
-      && typeof (parsed as Record<string, unknown>).checked_at === "number"
-      && Number.isFinite((parsed as Record<string, number>).checked_at)
-    ) return parsed as { valid: boolean; checked_at: number };
-    localStorage.removeItem(verdictKey);
-    return null;
-  } catch {
-    localStorage.removeItem(verdictKey);
-    return null;
-  }
-}
-
-function initLicense(): void {
-  if (demoMode) return;
-  const url = new URL(window.location.href);
-  const returnedLicense = url.searchParams.get("license");
-  if (returnedLicense) {
-    localStorage.setItem(licenseKey, returnedLicense);
-    localStorage.removeItem(verdictKey);
-    url.searchParams.delete("license");
-    history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
-  }
-  const token = returnedLicense ?? localStorage.getItem(licenseKey);
-  const cached = parseVerdict();
-  if (cached?.valid) showLicenseState(true, "Planner Pro is active on this device.");
-  if (token && (!cached || Date.now() - cached.checked_at > 86_400_000)) void verifyLicense(token);
-}
-
-$("#license-form").addEventListener("submit", (event) => {
-  event.preventDefault();
-  if (demoMode) {
-    $("#license-status").textContent = "Demo mode cannot restore licenses. Exit demo and use your data first.";
-    return;
-  }
-  const token = ($("#license-token") as HTMLInputElement).value.trim();
-  if (!token) return;
-  localStorage.setItem(licenseKey, token);
-  $("#license-status").textContent = "Verifying license…";
-  void verifyLicense(token);
-});
-
-$("#save-scenario").addEventListener("click", () => {
-  if (!unlocked || !current || inputError()) return;
-  const scenarios = readSavedScenarios();
-  scenarios.push({
-    containers: current.containers,
-    ports: current.ports,
-    mounts: current.mounts,
-    baselineMs: current.baselineMs,
-    budgetMs: current.budgetMs,
-    predictedMs: current.predictedMs,
-    status: current.status
-  });
-  localStorage.setItem(scenariosKey, JSON.stringify(scenarios.slice(-5)));
-  renderSaved();
-});
-
-function renderSaved(): void {
-  const list = $("#saved-scenarios");
-  const scenarios = readSavedScenarios();
-  list.replaceChildren();
-  if (!scenarios.length) {
-    const item = document.createElement("li");
-    item.textContent = "No saved scenarios yet. Adjust the planner above, then save this scenario.";
-    list.append(item);
-    return;
-  }
-  for (const scenario of scenarios) {
-    const item = document.createElement("li");
-    item.textContent = `${scenario.containers} containers × ${scenario.ports} ports — ${scenario.predictedMs} ms (${scenario.status})`;
-    list.append(item);
-  }
-}
-
-function readSavedScenarios(): SavedScenario[] {
-  try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(scenariosKey) ?? "[]");
-    if (Array.isArray(parsed) && parsed.every(isSavedScenario)) return parsed.slice(-5);
-    localStorage.removeItem(scenariosKey);
-    return [];
-  } catch {
-    localStorage.removeItem(scenariosKey);
-    return [];
-  }
-}
-
 function updateConnection(): void {
   const badge = $("#connection-state");
   const online = navigator.onLine;
-  badge.textContent = online ? "Online · license checks available" : "Offline · planner and docs still work";
+  badge.textContent = online ? "Online · planner and docs work" : "Offline · planner and docs still work";
   badge.dataset.online = String(online);
 }
 
@@ -339,15 +197,6 @@ window.addEventListener("offline", updateConnection);
 
 initDemo();
 renderPlanner();
-if (!demoMode) {
-  renderSaved();
-  initLicense();
-} else {
-  document.querySelectorAll<HTMLElement>("[data-real-only]").forEach((element) => { element.hidden = true; });
-  $("#license-form").hidden = true;
-  ($<HTMLInputElement>("#license-token")).disabled = true;
-  $("#license-status").textContent = "Demo mode keeps sample data separate. Exit demo to restore a license.";
-}
 updateConnection();
 initRouteFocus(demoMode && Boolean(window.location.hash));
 

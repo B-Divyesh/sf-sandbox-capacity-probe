@@ -4,16 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f2f0e7" />
-    <meta name="description" content="How Sandbox Capacity Probe handles local data and license checks." />
+    <meta name="description" content="How Sandbox Capacity Probe handles local data, demo storage, and offline reading." />
     <link rel="canonical" href="https://sandbox-capacity-probe.sociobot.in/privacy/" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Privacy — Sandbox Capacity Probe" />
-    <meta property="og:description" content="How Sandbox Capacity Probe handles local data and license checks." />
+    <meta property="og:description" content="How Sandbox Capacity Probe handles local data, demo storage, and offline reading." />
     <meta property="og:url" content="https://sandbox-capacity-probe.sociobot.in/privacy/" />
     <meta property="og:image" content="https://sandbox-capacity-probe.sociobot.in/social-card.webp" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Privacy — Sandbox Capacity Probe" />
-    <meta name="twitter:description" content="How Sandbox Capacity Probe handles local data and license checks." />
+    <meta name="twitter:description" content="How Sandbox Capacity Probe handles local data, demo storage, and offline reading." />
     <meta name="twitter:image" content="https://sandbox-capacity-probe.sociobot.in/social-card.webp" />
     <title>Privacy — Sandbox Capacity Probe</title>
     <link rel="icon" href="/mark.svg" type="image/svg+xml" />
@@ -22,18 +22,15 @@
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to main content</a>
-    <header class="site-header"><nav class="nav shell" aria-label="Primary navigation"><a class="brand" href="/"><img class="brand-mark" src="/mark.svg" alt="" width="36" height="36" /><span>Sandbox Capacity Probe</span></a><details class="nav-menu"><summary>Menu</summary><div class="nav-links"><a href="/?demo=1#cli-demo">Demo</a><a href="/#method">Method</a><a href="/#planner">Planner</a><a href="/privacy/" aria-current="page">Privacy</a></div></details></nav></header>
+    <header class="site-header"><nav class="nav shell" aria-label="Primary navigation"><a class="brand" href="/"><img class="brand-mark" src="/mark.svg" alt="" width="36" height="36" /><span>Sandbox Capacity Probe</span></a><button class="nav-toggle" id="nav-toggle" type="button" aria-controls="primary-links" aria-expanded="false">Menu</button><div class="nav-links" id="primary-links"><a href="/?demo=1#cli-demo">Demo</a><a href="/#method">Method</a><a href="/#planner">Planner</a><a href="/privacy/" aria-current="page">Privacy</a></div></nav></header>
     <main class="legal shell" id="main" tabindex="-1"><article>
       <p class="eyebrow">Updated 29 August 2026</p>
       <h1 tabindex="-1">Privacy</h1>
       <p>Sandbox Capacity Probe is local first. The CLI sends no telemetry.</p>
       <p>It does not send probe results, runtime details, container names, or host details to Sociobot.</p>
       <h2>Website storage</h2>
-      <p>The free planner does not require an account. Demo changes use a separate browser-storage key and are discarded when you exit.</p>
-      <p>Planner Pro stores its license, last verification result, and saved scenarios in this browser. Clear site data to remove them.</p>
-      <h2>License verification</h2>
-      <p>The site sends your license token to Sociobot when verification is due. Automatic checks occur at most once each day.</p>
-      <p>This browser allows one manual verification attempt each minute.</p>
+      <p>The planner needs no account and does not save normal planning inputs automatically.</p>
+      <p>Demo changes use a separate browser-storage key and are discarded when you exit.</p>
       <h2>Offline use and logs</h2>
       <p>A service worker stores the public site files for offline reading. There are no advertising cookies, behavioral analytics, or third-party scripts.</p>
       <p>Infrastructure logs may temporarily record an IP address, request path, browser name, and timestamp for security.</p>

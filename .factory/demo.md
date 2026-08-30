@@ -11,10 +11,9 @@ mounts per container. It works without an account or requests beyond the site.
 
 The persistent **Demo — sample data, nothing is saved** banner offers **Reset
 demo** and **Exit demo and use your data**. Demo changes are stored only under the local
-storage key `demo:sandbox-capacity-probe:scenario`; normal license and saved
-scenario keys are never read or written in demo mode. Leaving demo removes that
-key. Purchase links and license restore controls stay unavailable until you
-choose **Exit demo and use your data**, so the demo never contacts billing.
+storage key `demo:sandbox-capacity-probe:scenario`; normal browser-storage keys
+are never read or written in demo mode. Leaving demo removes that key. The
+planner has no billing or license path, so the demo never contacts billing.
 
 For the CLI, run `capacity-probe demo` or `capacity-probe --demo`. It writes the
 bundled report to a process-specific temporary directory and prints its path.

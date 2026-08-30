@@ -1,17 +1,17 @@
 [
   {
     "id": "demo-isolated",
-    "claim": "Try sample data without saving it to your real planner data.",
-    "where": "landing primary action, demo banner, README, and demo guide",
+    "claim": "Try sample data without saving it to normal browser storage.",
+    "where": "landing action, demo banner, README, and demo guide",
     "test": "npm run test:claims -- --grep '@claim:demo-isolated'",
-    "sandbox": "fresh browser context at /?demo=1 with real-data sentinels; exercise the license submit path; assert no real key changes, billing requests, or visible purchase controls"
+    "sandbox": "fresh browser context at /?demo=1 with normal-storage sentinels; change, reset, and exit the sample; assert only the demo key changes"
   },
   {
     "id": "local-planner",
     "claim": "The website planner calculates scenarios locally.",
     "where": "landing facts and planner",
     "test": "npm run test:claims -- --grep '@claim:local-planner'",
-    "sandbox": "fresh browser context at /?demo=1; change a scenario, assert the result, and assert no cross-origin request"
+    "sandbox": "fresh browser context at /?demo=1; change a scenario, assert the result, and record no cross-origin request"
   },
   {
     "id": "no-telemetry",
@@ -22,17 +22,17 @@
   },
   {
     "id": "csv-export",
-    "claim": "Export the current scenario as CSV without a license.",
-    "where": "planner export button, paid-tier copy, and README",
+    "claim": "Export the current scenario as CSV.",
+    "where": "planner export button, landing facts, README, and terms",
     "test": "npm run test:claims -- --grep '@claim:csv-export'",
     "sandbox": "fresh demo; download CSV and assert its header and bundled sample row"
   },
   {
     "id": "offline-reload",
     "claim": "Read the planner offline after the first visit.",
-    "where": "connection state, README, and privacy page",
+    "where": "landing facts, connection state, README, and privacy page",
     "test": "npm run test:claims -- --grep '@claim:offline-reload'",
-    "sandbox": "install and update the service worker online, then reload the demo under offline mode"
+    "sandbox": "new browser context; load demo online, set offline, and reload from the service-worker cache"
   },
   {
     "id": "cli-demo",
@@ -53,7 +53,7 @@
     "claim": "The CLI uses an internal labeled network, localhost-only published ports, read-only mounts, and cleans up after success or an ordinary error.",
     "where": "README and terms",
     "test": "npm run test:claims -- --grep '@claim:cli-isolated-cleanup'",
-    "sandbox": "run against a deterministic fake Docker executable and inspect every create, run, and cleanup argument"
+    "sandbox": "run against a deterministic fake Docker executable and inspect create, run, cleanup, container-start failure, and network-create failure arguments and temporary directories"
   },
   {
     "id": "cli-report-compare",
@@ -70,45 +70,17 @@
     "sandbox": "run a bounded probe against a local fake runtime, request a temporary output path, and validate the report there"
   },
   {
-    "id": "planner-pro-five",
-    "claim": "Planner Pro saves the five latest scenarios locally for side-by-side review.",
-    "where": "paid-tier section, README, and terms",
-    "test": "npm run test:claims -- --grep '@claim:planner-pro-five'",
-    "sandbox": "mock one valid Sociobot verdict, save six scenarios, and assert only the latest five appear and remain in local storage"
+    "id": "free-planner",
+    "claim": "The planner and CSV export work without an account.",
+    "where": "landing facts, privacy page, terms, and README",
+    "test": "npm run test:claims -- --grep '@claim:free-planner'",
+    "sandbox": "fresh browser with no account state; change the planner, export CSV, and assert no cross-origin request or normal-storage write"
   },
   {
-    "id": "planner-pro-price",
-    "claim": "Planner Pro costs $39 as a one-time purchase.",
-    "where": "landing paid section, terms, and README",
-    "test": "npm run test:claims -- --grep '@claim:planner-pro-price'",
-    "sandbox": "assert the visible offer and request the documented checkout URL; verify the hosted page names this product, $39.00, and a one-time charge"
-  },
-  {
-    "id": "planner-pro-checkout",
-    "claim": "The buy link opens a Sociobot-hosted checkout for Sandbox Capacity Probe.",
-    "where": "landing paid section, terms, and README",
-    "test": "npm run test:claims -- --grep '@claim:planner-pro-checkout'",
-    "sandbox": "follow the exact public buy link without purchasing; assert a successful hosted Dodo session for Sandbox Capacity Probe"
-  },
-  {
-    "id": "planner-pro-no-account",
-    "claim": "The free website planner works without an account.",
-    "where": "landing license status, privacy page, and README",
-    "test": "npm run test:claims -- --grep '@claim:planner-pro-no-account'",
-    "sandbox": "open a fresh browser with no license or account state, change the planner, and assert no account or billing request occurs"
-  },
-  {
-    "id": "planner-pro-free-features",
-    "claim": "The CLI, safety controls, JSON reports, and CSV export work without Planner Pro.",
-    "where": "landing paid section, terms, and README",
-    "test": "npm run test:claims -- --grep '@claim:planner-pro-free-features'",
-    "sandbox": "use a fresh unlicensed browser to export CSV, then run the unlicensed CLI safety and JSON paths against the deterministic local runtime"
-  },
-  {
-    "id": "license-policy",
-    "claim": "License tokens stay in browser storage; manual checks are limited to one per minute and automatic checks to one per day.",
-    "where": "license form, README, and privacy page",
-    "test": "npm run test:claims -- --grep '@claim:license-policy'",
-    "sandbox": "mock the documented Sociobot endpoint; assert local token storage, one manual request, local throttling, and no automatic repeat"
+    "id": "mit-license",
+    "claim": "The source code uses the MIT License.",
+    "where": "README, terms, and footer",
+    "test": "npm run test:claims -- --grep '@claim:mit-license'",
+    "sandbox": "read the shipped license and assert the standard MIT grant and copyright notice are present"
   }
 ]

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -20,6 +20,7 @@ printf '%s\\n' "$*" >> "$FAKE_RUNTIME_LOG"
 case "$*" in
   "--version") echo "Docker fake" ;;
   "context show") echo "staging-test" ;;
+  "network create "*) if [ "$FAKE_RUNTIME_FAIL_NETWORK" = "1" ]; then echo "synthetic network failure" >&2; exit 1; fi ;;
   "run "*) if [ "$FAKE_RUNTIME_FAIL_RUN" = "1" ]; then echo "synthetic failure" >&2; exit 1; else echo "container-id"; fi ;;
   "inspect --format {{.State.Running}} "*) echo "true" ;;
 esac
@@ -29,11 +30,11 @@ exit 0
   return {
     fixture,
     log,
-    env: { ...process.env, PATH: `${fixture}:${process.env.PATH}`, FAKE_RUNTIME_LOG: log }
+    env: { ...process.env, PATH: `${fixture}:${process.env.PATH}`, FAKE_RUNTIME_LOG: log, TMPDIR: fixture }
   };
 }
 
-test("core planner works without a license and has no serious accessibility issues", async ({ page }) => {
+test("core planner works without an account and has no serious accessibility issues", async ({ page }) => {
   const consoleErrors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text());
@@ -51,29 +52,9 @@ test("core planner works without a license and has no serious accessibility issu
 });
 
 test("@claim:demo-isolated loads sample data in its own namespace and resets it", async ({ page }) => {
-  const billingRequests: string[] = [];
-  await page.route("https://api.sociobot.in/**", (route) => route.abort("blockedbyclient"));
-  page.on("request", (request) => {
-    if (request.url().startsWith("https://api.sociobot.in/")) billingRequests.push(request.url());
-  });
-  const checkedAt = Date.now();
   const realData = {
-    "sb_scenarios:sandbox-capacity-probe": JSON.stringify([{
-      containers: 8,
-      ports: 2,
-      mounts: 1,
-      baselineMs: 220,
-      budgetMs: 1200,
-      predictedMs: 303,
-      status: "comfortable"
-    }]),
-    "sb_license:sandbox-capacity-probe": "real-license-sentinel",
-    "sb_license_verdict:sandbox-capacity-probe": JSON.stringify({
-      valid: true,
-      reason: "ok",
-      checked_at: checkedAt
-    }),
-    "sb_license_verify_attempt:sandbox-capacity-probe": String(checkedAt)
+    "normal:sandbox-capacity-probe:scenario": "normal-scenario-sentinel",
+    "normal:sandbox-capacity-probe:settings": "normal-settings-sentinel"
   };
   await page.addInitScript((entries) => {
     for (const [key, value] of Object.entries(entries)) localStorage.setItem(key, value);
@@ -82,29 +63,16 @@ test("@claim:demo-isolated loads sample data in its own namespace and resets it"
   await expect(page).toHaveTitle("Demo — Sandbox Capacity Probe");
   await expect(page.locator("#demo-banner")).toBeVisible();
   await expect(page.locator("#containers")).toHaveValue("24");
-  await expect(page.locator("#license-form")).toBeHidden();
-  await expect(page.locator("[data-real-only]")).toHaveCount(1);
-  await expect(page.locator("[data-real-only]:visible")).toHaveCount(0);
-  await page.evaluate(() => {
-    const input = document.querySelector<HTMLInputElement>("#license-token")!;
-    input.disabled = false;
-    input.value = "qa-demo-isolation-invalid";
-    document.querySelector<HTMLFormElement>("#license-form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-  });
-  await expect(page.locator("#license-status")).toContainText("Demo mode cannot restore licenses");
-  expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage).filter(([key]) => key.startsWith("sb_"))))).toEqual(realData);
-  expect(billingRequests).toEqual([]);
+  expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage).filter(([key]) => key.startsWith("normal:"))))).toEqual(realData);
   expect(await page.evaluate(() => localStorage.getItem("demo:sandbox-capacity-probe:scenario"))).toContain('"containers":24');
   await page.locator("#containers").fill("30");
   await page.locator("#reset-demo").click();
   await expect(page.locator("#containers")).toHaveValue("24");
-  expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage).filter(([key]) => key.startsWith("sb_"))))).toEqual(realData);
+  expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage).filter(([key]) => key.startsWith("normal:"))))).toEqual(realData);
   await page.locator("#start-real").click();
   await expect(page).toHaveURL("http://127.0.0.1:4173/");
-  await expect(page.locator("#license-status")).toContainText("Planner Pro is active");
   expect(await page.evaluate(() => localStorage.getItem("demo:sandbox-capacity-probe:scenario"))).toBeNull();
-  expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage).filter(([key]) => key.startsWith("sb_"))))).toEqual(realData);
-  expect(billingRequests).toEqual([]);
+  expect(await page.evaluate(() => Object.fromEntries(Object.entries(localStorage).filter(([key]) => key.startsWith("normal:"))))).toEqual(realData);
 });
 
 test("@claim:local-planner calculates the sample without a cross-origin request", async ({ page }) => {
@@ -168,7 +136,8 @@ test("deployment policy has a response-header CSP and a real 404 override", () =
     responseOverrides: Record<string, { rewrite: string; statusCode: number }>;
   };
   expect(config.globalHeaders["Content-Security-Policy"]).toContain("frame-ancestors 'none'");
-  expect(config.globalHeaders["Content-Security-Policy"]).toContain("connect-src 'self' https://api.sociobot.in");
+  expect(config.globalHeaders["Content-Security-Policy"]).toContain("connect-src 'self'");
+  expect(config.globalHeaders["Content-Security-Policy"]).not.toContain("api.sociobot.in");
   expect(config.responseOverrides["404"]).toEqual({ rewrite: "/404.html", statusCode: 404 });
 });
 
@@ -251,20 +220,6 @@ test("fractional planner values cannot export stale calculation fields", async (
   await expect(page.locator("#export-csv")).toBeDisabled();
 });
 
-test("corrupt saved-scenario values recover without aborting initialization", async ({ page }) => {
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(String(error)));
-  await page.goto("/");
-  for (const corrupt of ["not-json", "[null]", "[{}]", '[{"containers":0,"ports":1,"mounts":1,"baselineMs":1,"budgetMs":50,"predictedMs":1,"status":"comfortable"}]']) {
-    await page.evaluate((value) => localStorage.setItem("sb_scenarios:sandbox-capacity-probe", value), corrupt);
-    await page.reload();
-    await expect(page.locator("#saved-scenarios")).toContainText("No saved scenarios yet");
-    await expect(page.locator("#connection-state")).toContainText("Online");
-    expect(await page.evaluate(() => localStorage.getItem("sb_scenarios:sandbox-capacity-probe"))).toBeNull();
-  }
-  expect(errors).toEqual([]);
-});
-
 test("corrupt demo values recover to the complete bundled sample", async ({ page }) => {
   await page.goto("/?demo=1");
   for (const corrupt of ['"bad-value"', "{}", '{"containers":24,"ports":4,"mounts":2,"baselineMs":0,"budgetMs":0}']) {
@@ -323,18 +278,35 @@ test("document navigation and Back focus and announce the new route", async ({ p
   await expect(page.locator("[data-route-status]")).toContainText("Terms — Sandbox Capacity Probe. Terms.");
 });
 
-test("demo route focuses the real CLI sample and mobile navigation keeps four links", async ({ page }, testInfo) => {
+test("demo route focuses the real CLI sample and every header link stays reachable", async ({ page }, testInfo) => {
   await page.goto("/?demo=1#cli-demo");
   await expect(page.locator("#cli-demo-title")).toBeFocused();
   await expect(page.locator(".terminal-recording")).toBeVisible();
   await expect(page.locator("#cli-demo-output")).toContainText("capacity-probe demo");
   if (testInfo.project.name === "mobile-chromium") {
-    await page.getByText("Menu", { exact: true }).click();
-    const links = page.locator(".nav-menu .nav-links a");
-    await expect(links).toHaveCount(4);
-    for (const link of await links.all()) await expect(link).toBeVisible();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+    await page.locator("#nav-toggle").click();
   }
+  const links = page.locator(".site-header .nav-links a");
+  await expect(links).toHaveCount(4);
+  for (const link of await links.all()) {
+    await expect(link).toBeVisible();
+    await link.focus();
+    await expect(link).toBeFocused();
+    const box = await link.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(await page.evaluate(() => window.innerWidth));
+  }
+  if (testInfo.project.name === "mobile-chromium") expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});
+
+test("first screen keeps all three product facts in view", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const positions = await page.locator(".hero-note li").evaluateAll((facts) => facts.map((fact) => fact.getBoundingClientRect().bottom));
+  const viewportHeight = await page.evaluate(() => window.innerHeight);
+  expect(positions).toHaveLength(3);
+  expect(positions.every((bottom) => bottom <= viewportHeight)).toBe(true);
 });
 
 test("mobile uses the lightweight hero and stable assets are revalidated", async ({ page }, testInfo) => {
@@ -346,51 +318,6 @@ test("mobile uses the lightweight hero and stable assets are revalidated", async
   expect(config).not.toContain("topographic-envelope*.webp");
   expect(config).not.toContain('"route": "/social-card.webp"');
   expect(config).not.toContain('"route": "/apple-touch-icon.png"');
-});
-
-test("a returned license is stored, stripped from the URL, and verified", async ({ page }) => {
-  await page.route("https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/verify?license=license-test", (route) =>
-    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ valid: true, reason: "ok", expires_at: null }) })
-  );
-  await page.goto("/?license=license-test");
-  await expect(page).toHaveURL("http://127.0.0.1:4173/");
-  await expect(page.locator("#license-status")).toContainText("Planner Pro is active");
-  await expect(page.locator("#pro-tools")).toBeVisible();
-  expect(await page.evaluate(() => localStorage.getItem("sb_license:sandbox-capacity-probe"))).toBe("license-test");
-});
-
-test("@claim:license-policy stores the token locally and limits manual and automatic checks", async ({ page }) => {
-  let requests = 0;
-  const verifyUrl = "https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/verify?license=invalid-token";
-  await page.route(verifyUrl, (route) => {
-    requests += 1;
-    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ valid: false, reason: "invalid" }) });
-  });
-  await page.goto("/");
-  await page.locator("#license-token").fill("invalid-token");
-  await page.locator("#license-form button").click();
-  await expect(page.locator("#license-status")).toContainText("License no longer active");
-  await page.locator("#license-form button").click();
-  await expect(page.locator("#license-status")).toContainText("Too many verification attempts");
-  expect(requests).toBe(1);
-  expect(await page.evaluate(() => localStorage.getItem("sb_license:sandbox-capacity-probe"))).toBe("invalid-token");
-  await page.reload();
-  await expect(page.locator("#license-status")).toContainText("Free planner active");
-  expect(requests).toBe(1);
-  await page.evaluate(() => localStorage.removeItem("sb_license_verify_attempt:sandbox-capacity-probe"));
-  await page.unroute(verifyUrl);
-  await page.route(verifyUrl, (route) => route.fulfill({
-    status: 429,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Expose-Headers": "Retry-After",
-      "Retry-After": "12"
-    },
-    body: "rate limited"
-  }));
-  await page.locator("#license-token").fill("invalid-token");
-  await page.locator("#license-form button").click();
-  await expect(page.locator("#license-status")).toContainText("Try again after 12 seconds");
 });
 
 test("@claim:cli-demo matches the website recording to the bundled report without a runtime", async ({ page }) => {
@@ -452,6 +379,11 @@ test("@claim:cli-isolated-cleanup uses an internal network, localhost ports, lab
   expect(runCli(args, { ...env, FAKE_RUNTIME_FAIL_RUN: "1" }).status).toBe(2);
   calls = readFileSync(log, "utf8");
   expect(calls).toContain("network rm capacity-probe-");
+  writeFileSync(log, "");
+  expect(runCli(args, { ...env, FAKE_RUNTIME_FAIL_NETWORK: "1" }).status).toBe(2);
+  calls = readFileSync(log, "utf8");
+  expect(calls).toContain("network create --internal --label in.sociobot.capacity-probe=true");
+  expect(readdirSync(fixture).filter((name) => name.startsWith("capacity-probe-"))).toEqual([]);
   rmSync(fixture, { recursive: true, force: true });
 });
 
@@ -536,73 +468,26 @@ test("@claim:local-results writes the requested CLI report locally", () => {
   rmSync(fixture, { recursive: true, force: true });
 });
 
-test("@claim:planner-pro-five keeps only the five latest local scenarios for review", async ({ page }) => {
-  await page.route("https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/verify?license=pro-test", (route) =>
-    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ valid: true, reason: "ok" }) })
-  );
-  await page.goto("/?license=pro-test");
-  await expect(page.locator("#pro-tools")).toBeVisible();
-  await expect(page.locator(".price")).toContainText("$39");
-  await expect(page.locator(".price")).toContainText("one-time purchase");
-  await expect(page.getByRole("link", { name: "Buy Planner Pro for $39" })).toHaveAttribute("href", "https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/checkout");
-  for (let containers = 10; containers <= 15; containers += 1) {
-    await page.locator("#containers").fill(String(containers));
-    await page.locator("#save-scenario").click();
-  }
-  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("sb_scenarios:sandbox-capacity-probe") ?? "[]"));
-  expect(saved).toHaveLength(5);
-  expect(saved[0].containers).toBe(11);
-  await expect(page.locator("#saved-scenarios li")).toHaveCount(5);
-});
-
-test("@claim:planner-pro-price verifies the $39 one-time hosted offer", async ({ page, request }) => {
-  await page.goto("/");
-  await expect(page.locator(".price")).toHaveText(/\$39\s+one-time purchase/);
-  const response = await request.get("https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/checkout");
-  expect(response.ok()).toBe(true);
-  const body = await response.text();
-  expect(body).toContain("Sandbox Capacity Probe");
-  expect(body).toMatch(/\$39|39\.00/);
-  expect(body.toLowerCase()).toContain("one-time");
-});
-
-test("@claim:planner-pro-checkout opens the hosted checkout for this product", async ({ page, request }) => {
-  await page.goto("/");
-  const buy = page.getByRole("link", { name: "Buy Planner Pro for $39" });
-  const checkout = await buy.getAttribute("href");
-  expect(checkout).toBe("https://api.sociobot.in/api/v1/products/sandbox-capacity-probe/checkout");
-  const response = await request.get(checkout!);
-  expect(response.ok()).toBe(true);
-  expect(response.url()).toMatch(/^https:\/\/checkout\.dodopayments\.com\/session\//);
-  expect(await response.text()).toContain("Sandbox Capacity Probe");
-});
-
-test("@claim:planner-pro-no-account uses the free planner without account or billing traffic", async ({ page }) => {
+test("@claim:free-planner works without an account, saved state, or external request", async ({ page }) => {
   const outsideRequests: string[] = [];
   page.on("request", (request) => {
     if (new URL(request.url()).origin !== "http://127.0.0.1:4173") outsideRequests.push(request.url());
   });
   await page.goto("/");
-  await expect(page.locator("#license-status")).toHaveText("Free planner active. No account required.");
-  expect(await page.evaluate(() => localStorage.length)).toBe(0);
   await page.locator("#containers").fill("18");
   await expect(page.locator("#generated-command")).toContainText("--containers 18");
+  const downloadPromise = page.waitForEvent("download");
+  await page.locator("#export-csv").click();
+  expect((await downloadPromise).suggestedFilename()).toBe("sandbox-capacity-scenario.csv");
+  expect(await page.evaluate(() => Object.keys(localStorage))).toEqual([]);
   expect(outsideRequests).toEqual([]);
 });
 
-test("@claim:planner-pro-free-features keeps CLI safety, JSON, and CSV available without a license", async ({ page }) => {
-  await page.goto("/");
-  expect(await page.evaluate(() => localStorage.getItem("sb_license:sandbox-capacity-probe"))).toBeNull();
-  const downloadPromise = page.waitForEvent("download");
-  await page.locator("#export-csv").click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe("sandbox-capacity-scenario.csv");
-  const refused = runCli(["probe", "--target", "production", "--confirm", "production", "--dry-run", "--json"]);
-  expect(refused.status).toBe(2);
-  expect(refused.stderr).toContain("looks like production");
-  const safe = runCli(["probe", "--target", "staging", "--confirm", "staging", "--containers", "1", "--dry-run", "--json"]);
-  expect(safe.status).toBe(0);
-  expect(JSON.parse(safe.stdout)).toMatchObject({ maximum_container_starts: 2 });
+test("@claim:mit-license ships the standard MIT grant", () => {
+  const license = readFileSync("LICENSE", "utf8");
+  expect(license).toContain("MIT License");
+  expect(license).toContain("Permission is hereby granted, free of charge");
+  expect(license).toContain("THE SOFTWARE IS PROVIDED \"AS IS\"");
 });
 
 test("the installed command name cannot shadow OpenSSH scp", () => {
