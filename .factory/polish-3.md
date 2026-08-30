@@ -18,7 +18,7 @@ open.
 
 | Finding | Change made | Evidence |
 | --- | --- | --- |
-| F-1-1 | Kept the actual bundled CLI recording immediately after the hero. `site/public/demo-output.txt` is captured CLI stdout; the test compares complete normalized stdout, the terminal recording, and both bundled JSON reports. | `@claim:cli-demo` passed from `/tmp/scp-polish3-final.OEZ5qW`; live [demo recording](evidence/polish-3/live-final/demo.png) at the demo URL. |
+| F-1-1 | Kept the actual bundled CLI recording immediately after the hero. `site/public/demo-output.txt` is captured CLI stdout; the test compares complete normalized stdout, the terminal recording, and both bundled JSON reports. | `@claim:cli-demo` passed from `/tmp/scp-polish3-final-pushed-8MvfvK`; live [demo recording](evidence/polish-3/live-final/demo.png) at the demo URL. |
 | F-1-2 | The reviewer-approved alternative was implemented: removed the unavailable $39 purchase, hosted-checkout link, license state, merchant/refund copy, and their claims. The remaining planner and CSV export are free and accountless. | `@claim:free-planner` passed; live root audit asserted no `Planner Pro` text or checkout link; [desktop root](evidence/polish-3/live-final/root-desktop.png). |
 | F-1-3 | Retained task-naming headings for the CLI sample, host measurement, containment, and planner. | `.factory/copy-audit.md`; live desktop root and demo audit; `npm test` passed. |
 | F-1-4 | Retained one vocabulary: **planned workload** for probe input and **planner** for the local estimate. Removed obsolete saved-scenario/license terminology with the paid flow. | `.factory/copy-audit.md` terminology table; clean-clone `npm test` passed. |
@@ -37,7 +37,8 @@ open.
 ## Final evidence
 
 - Every `.factory/claims.json` command passed separately from
-  `/tmp/scp-polish3-final.OEZ5qW`.
+  `/tmp/scp-polish3-final-pushed-8MvfvK` at pushed commit
+  `19a57b4d59274ac4e447be900437f3cfd8bcc2e5`.
 - Full final clean-clone suite: `npm ci`, typecheck, lint, `npm test`, build,
   and `cargo package` all passed. `npm test` includes 54 Playwright checks.
 - Live factory URL verifier passed root, demo, Privacy, and Terms with zero

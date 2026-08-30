@@ -32,7 +32,8 @@ for offline reload.
 
 ### Fresh clean clone
 
-From `/tmp/scp-polish3-final.OEZ5qW`, cloned from the final repository state:
+From `/tmp/scp-polish3-final-pushed-8MvfvK`, cloned from pushed commit
+`19a57b4d59274ac4e447be900437f3cfd8bcc2e5`:
 
 | Check | Result |
 | --- | --- |
