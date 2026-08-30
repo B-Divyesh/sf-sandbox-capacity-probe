@@ -39,7 +39,7 @@
     "claim": "The CLI demo and website recording use the same bundled report without a runtime or network.",
     "where": "landing CLI sample, CLI help, README, and demo guide",
     "test": "npm run test:claims -- --grep '@claim:cli-demo'",
-    "sandbox": "run the compiled CLI demo without Docker or Podman; validate its temporary JSON; compare the website recording and downloadable sample with the shipped fixture"
+    "sandbox": "run the compiled CLI demo without Docker or Podman; normalize only its temporary path; compare complete stdout, website recording, and both shipped JSON reports"
   },
   {
     "id": "cli-safety-bounds",

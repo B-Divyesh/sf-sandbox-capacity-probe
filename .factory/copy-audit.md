@@ -1,4 +1,4 @@
-# Copy audit — 29 August 2026
+# Copy audit — 30 August 2026
 
 This inventory covers landing prose, headings, navigation, actions, facts,
 form labels, initial states, errors, terminal guidance, and every README
@@ -30,6 +30,7 @@ metaphor. Terminal measurements are listed as evidence, not omitted.
 | H2 | 7 | Run the CLI sample without a runtime |
 | Prose | 11 | This recording comes from `capacity-probe demo` and the bundled sample report. |
 | Prose | 8 | It needs no Docker, Podman, or network connection. |
+| Prose | 13 | The 95th-percentile (p95) startup time is the time that 95% of starts met. |
 | Action | 3 | Copy demo command |
 | Action | 2 | Replay sample |
 | Evidence | 2 | `capacity-probe demo` |
@@ -126,6 +127,7 @@ metaphor. Terminal measurements are listed as evidence, not omitted.
 | 11 | Could not verify while offline. The free planner remains available. |
 | 3 / 6 | Verifying license… · Online · license checks available |
 | 7 | Offline · planner and docs still work |
+| 9 | Route announcements repeat each route title and focused heading. |
 
 ## README inventory
 

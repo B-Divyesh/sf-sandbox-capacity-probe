@@ -146,9 +146,9 @@ test("@claim:offline-reload keeps the planner available after the first visit", 
   await page.goto("/?demo=1");
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload();
-  expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v5");
+  expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v6");
   await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())?.update(); });
-  expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v5");
+  expect(await page.evaluate(() => caches.keys())).toContain("capacity-probe-shell-v6");
   await context.setOffline(true);
   await page.reload();
   await expect(page.locator("#planner-title")).toBeVisible();
@@ -290,8 +290,31 @@ test("metadata, targets, and designed 404 are shipped", async ({ page }) => {
   expect(tooSmall).toEqual([]);
   await page.goto("/404.html");
   await expect(page.locator("h1")).toHaveText("That page was not found.");
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://sandbox-capacity-probe.sociobot.in/404.html");
+  await expect(page.locator('meta[property="og:url"]')).toHaveAttribute("content", "https://sandbox-capacity-probe.sociobot.in/404.html");
+  await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute("content", "Page not found — Sandbox Capacity Probe");
+  await expect(page.locator('meta[name="twitter:description"]')).toHaveAttribute("content", "This Sandbox Capacity Probe page was not found.");
+  await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute("content", /social-card\.webp$/);
   await expect(page.getByRole("link", { name: "Privacy" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Terms" }).first()).toBeVisible();
+});
+
+test("document navigation and Back focus and announce the new route", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".site-footer").getByRole("link", { name: "Privacy" }).click();
+  await expect(page).toHaveURL(/\/privacy\/$/);
+  await expect(page.getByRole("heading", { name: "Privacy", level: 1 })).toBeFocused();
+  await expect(page.locator("[data-route-status]")).toContainText("Privacy — Sandbox Capacity Probe. Privacy.");
+
+  await page.goBack();
+  await expect(page).toHaveURL("http://127.0.0.1:4173/");
+  await expect(page.getByRole("heading", { name: "Measure container capacity before rollout.", level: 1 })).toBeFocused();
+  await expect(page.locator("[data-route-status]")).toContainText("Sandbox Capacity Probe — Measure container capacity");
+
+  await page.locator(".site-footer").getByRole("link", { name: "Terms" }).click();
+  await expect(page).toHaveURL(/\/terms\/$/);
+  await expect(page.getByRole("heading", { name: "Terms", level: 1 })).toBeFocused();
+  await expect(page.locator("[data-route-status]")).toContainText("Terms — Sandbox Capacity Probe. Terms.");
 });
 
 test("demo route focuses the real CLI sample and mobile navigation keeps four links", async ({ page }, testInfo) => {
@@ -377,14 +400,17 @@ test("@claim:cli-demo matches the website recording to the bundled report withou
   const website = JSON.parse(readFileSync("site/public/demo-capacity.json", "utf8"));
   expect(report).toEqual(shipped);
   expect(website).toEqual(shipped);
+  const normalizedStdout = result.stdout.replace(
+    /Sample report written to .+capacity-demo\.json/,
+    "Sample report written to /tmp/sandbox-capacity-probe-demo-4821/capacity-demo.json"
+  ).trimEnd();
+  const capturedStdout = readFileSync("site/public/demo-output.txt", "utf8").trimEnd();
+  expect(normalizedStdout).toBe(capturedStdout);
   await page.goto("/?demo=1#cli-demo");
   const recording = page.locator("#cli-demo-output");
-  await expect(recording).toContainText("$ capacity-probe demo");
-  await expect(recording).toContainText(`${report.config.containers} containers × ${report.config.ports_per_container} ports × ${report.config.mounts_per_container} mount`);
-  await expect(recording).toContainText(`predicted p95 ${report.model.predicted_p95_ms.toFixed(1)} ms / ${report.config.startup_budget_ms} ms budget`);
-  await expect(recording).toContainText(`(${report.envelope.headroom_ms.toFixed(1)} ms headroom)`);
-  await expect(recording).toContainText(report.host.rule_count_method);
-  await expect(page.locator(".terminal-recording")).toHaveAttribute("data-recording-source", "/demo-capacity.json");
+  expect((await recording.textContent())?.trimEnd()).toBe(`$ capacity-probe demo\n${capturedStdout}`);
+  await expect(page.locator(".terminal-recording")).toHaveAttribute("data-recording-source", "/demo-output.txt");
+  await expect(page.locator(".terminal-recording")).toHaveAttribute("data-report-source", "/demo-capacity.json");
   rmSync(dirname(reportPath), { recursive: true, force: true });
 });
 

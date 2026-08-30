@@ -403,10 +403,25 @@ fn print_report(report: &Report) {
         report.config.target, report.config.runtime, report.config.context
     );
     println!(
-        "  planned workload {} containers × {} ports × {} mounts",
+        "  planned workload {} {} × {} {} × {} {}",
         report.config.containers,
+        if report.config.containers == 1 {
+            "container"
+        } else {
+            "containers"
+        },
         report.config.ports_per_container,
-        report.config.mounts_per_container
+        if report.config.ports_per_container == 1 {
+            "port"
+        } else {
+            "ports"
+        },
+        report.config.mounts_per_container,
+        if report.config.mounts_per_container == 1 {
+            "mount"
+        } else {
+            "mounts"
+        }
     );
     println!("\n  level   starts      p50      p95   published");
     for level in &report.levels {

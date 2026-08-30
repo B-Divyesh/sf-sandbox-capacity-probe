@@ -55,7 +55,7 @@
         <div class="hero-grid shell">
           <div class="hero-copy">
             <p class="eyebrow">Docker and Podman capacity check</p>
-            <h1 id="hero-title">Measure container capacity before rollout.</h1>
+            <h1 id="hero-title" tabindex="-1">Measure container capacity before rollout.</h1>
             <p class="lede">For teams running isolated agent or customer containers, measure a safe Docker or Podman scale before the real rollout.</p>
             <div class="hero-actions">
               <a class="button survey" href="/?demo=1#cli-demo">Try it with sample data</a>
@@ -80,10 +80,11 @@
           <div class="section-intro">
             <p>This recording comes from <code>capacity-probe demo</code> and the bundled sample report.</p>
             <p>It needs no Docker, Podman, or network connection.</p>
+            <p>The 95th-percentile (p95) startup time is the time that 95% of starts met.</p>
             <div class="sample-command"><code>capacity-probe demo</code><button id="copy-demo-command" type="button">Copy demo command</button></div>
           </div>
         </div>
-        <div class="terminal terminal-recording" data-recording-source="/demo-capacity.json" aria-label="Recorded capacity-probe demo terminal output">
+        <div class="terminal terminal-recording" data-recording-source="/demo-output.txt" data-report-source="/demo-capacity.json" aria-label="Recorded capacity-probe demo terminal output">
           <div class="terminal-bar"><span>bundled sample / no runtime</span><button id="replay-demo" type="button" aria-controls="cli-demo-output">Replay sample</button></div>
           <pre id="cli-demo-output" tabindex="0"><span class="prompt">$</span> capacity-probe demo
 Demo — bundled sample data; no container runtime was contacted.

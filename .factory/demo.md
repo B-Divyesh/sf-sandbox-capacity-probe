@@ -2,7 +2,9 @@
 
 Open `/?demo=1#cli-demo` or choose **Try it with sample data** on the first
 screen. The site first shows a self-hosted recording of `capacity-probe demo`.
-Its output comes from the shipped `cli/examples/demo-capacity.json` report.
+Its complete stdout is captured in `site/public/demo-output.txt`. The claim test
+compares that capture with a new CLI run after normalizing only the temporary
+directory number. Both JSON reports match `cli/examples/demo-capacity.json`.
 
 The same page loads a 24-container planning scenario with four ports and two
 mounts per container. It works without an account or requests beyond the site.

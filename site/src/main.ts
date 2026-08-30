@@ -9,6 +9,7 @@ import {
   type ScenarioInput,
   type ScenarioResult
 } from "./planner";
+import { initRouteFocus } from "./route-focus";
 
 const slug = "sandbox-capacity-probe";
 const licenseKey = `sb_license:${slug}`;
@@ -152,9 +153,6 @@ function initDemo(): void {
     $("#planner-summary").textContent = "Demo reset to the bundled sample scenario.";
   });
   $("#start-real").addEventListener("click", () => localStorage.removeItem(demoKey));
-  if (window.location.hash === "#cli-demo") {
-    requestAnimationFrame(() => $("#cli-demo-title").focus({ preventScroll: true }));
-  }
 }
 
 $("#copy-demo-command").addEventListener("click", async () => {
@@ -351,6 +349,7 @@ if (!demoMode) {
   $("#license-status").textContent = "Demo mode keeps sample data separate. Exit demo to restore a license.";
 }
 updateConnection();
+initRouteFocus(demoMode && Boolean(window.location.hash));
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
